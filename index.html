@@ -297,6 +297,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
+  <p class="fine" style="margin-top:6px">Version 0.8 · 22 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -570,8 +571,9 @@ function motifLayout(model) {
       d.subVectors(P[j], P[i]); let L = d.length();
       if (L < 0.01) { d.set(Math.cos(i + j), 0, Math.sin(i + j)); L = 0.01; } else d.multiplyScalar(1 / L);
       const jit = mulberry32(hashStr(keys[i] + '|' + keys[j]) ^ SEED)();      // seeded irregularity, so it never reads as a lattice
-      const room = (24 + 12 * Math.sqrt(size[i]) + 12 * Math.sqrt(size[j])) * (0.85 + 0.35 * jit);
-      let f = -2400 * Math.sqrt(mass[i] * mass[j]) / Math.max(L * L, 100); // heavier regions push harder
+      const established = size[i] >= 2 && size[j] >= 2;
+      const room = ((established ? 40 : 24) + 12 * Math.sqrt(size[i]) + 12 * Math.sqrt(size[j])) * (0.85 + 0.35 * jit);
+      let f = -4200 * Math.sqrt(mass[i] * mass[j]) / Math.max(L * L, 100); // heavier regions push harder
       if (L < room) f -= (room - L) * 0.6;                               // never on top of each other
       const r = R[i][j];
       if (r > 0.05) f += (L - (room + 34 * (1 - r)) * (0.85 + 0.3 * jit)) * 0.06 * r; // relatives sit side by side
@@ -581,7 +583,7 @@ function motifLayout(model) {
     for (let i = 0; i < n; i++) {
       const p = P[i], rad = Math.hypot(p.x, p.z);
       const ux = rad > 0.5 ? p.x / rad : Math.cos(i * 2.4), uz = rad > 0.5 ? p.z / rad : Math.sin(i * 2.4);
-      const pull = (targetR[i] - rad) * 0.035;
+      const pull = (targetR[i] - rad) * 0.025;
       F[i].x += ux * pull; F[i].z += uz * pull;
       F[i].y = F[i].y * 0.5 - p.y * 0.02;                              // keep the sky broadly disc-shaped
       const cap = 9 * SKY / 250, step = F[i].length(); if (step > cap) F[i].multiplyScalar(cap / step);
@@ -1508,19 +1510,31 @@ $('#motifs').addEventListener('click', e => {
 let labelEls = [];
 function buildLabels() {
   const host = $('#labels'); host.innerHTML = '';
-  labelEls = model.clusters.map(cl => { const el = document.createElement('div'); el.className = 'mlabel'; el.innerHTML = `${esc(cl.label)}<b>${cl.count}</b>`; host.appendChild(el); return { el, cl }; });
+  const med = a => { const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  labelEls = model.clusters.map(cl => {
+    const el = document.createElement('div'); el.className = 'mlabel'; el.innerHTML = `${esc(cl.label)}<b>${cl.count}</b>`; host.appendChild(el);
+    const ps = cl.members.map(d => d.pos);
+    const anchor = new THREE.Vector3(med(ps.map(p => p.x)), med(ps.map(p => p.y)), med(ps.map(p => p.z)));
+    const core = [...ps].sort((a, b) => a.distanceTo(anchor) - b.distanceTo(anchor)).slice(0, Math.max(1, Math.ceil(ps.length * 0.6)));
+    return { el, cl, anchor, core };
+  });
 }
 const _v = new THREE.Vector3();
 function updateLabels() {
   const hide = selected >= 0 || ambient;
   const placed = [];
-  labelEls.forEach(({ el, cl }) => { // clusters are sorted largest first, so bigger regions win label space
-    _v.copy(cl.centre); _v.y += cl.radius * 0.9 + 10;
-    const dist = camera.position.distanceTo(cl.centre);
-    _v.project(camera);
+  labelEls.forEach(({ el, cl, anchor, core }) => { // clusters are sorted largest first, so bigger regions win label space
+    const dist = camera.position.distanceTo(anchor);
+    _v.copy(anchor).project(camera);
     let o = (_v.z < 1 && !hide) ? Math.min(1, (dist - 70) / 120) * (1 - Math.max(0, (dist - 1100) / 400)) : 0;
     if (filterKey) o *= cl.key === filterKey ? 1 : 0.25;
-    const x = (_v.x + 1) / 2 * innerWidth, y = (1 - _v.y) / 2 * innerHeight;
+    let x = (_v.x + 1) / 2 * innerWidth;
+    let top = (1 - _v.y) / 2 * innerHeight;
+    for (const q of core) { _v.copy(q).project(camera); if (_v.z < 1) top = Math.min(top, (1 - _v.y) / 2 * innerHeight); }
+    const y = top - 14;
+    const hw = (cl.label.length + 3) * 3.8;                       // keep labels on screen near the edges
+    if (x < -40 || x > innerWidth + 40) o = 0;
+    x = Math.min(innerWidth - hw - 8, Math.max(hw + 8, x));
     const w = (cl.label.length + 3) * 7.6, rect = [x - w / 2 - 6, y - 18, x + w / 2 + 6, y + 2];
     if (o > 0 && placed.some(q => rect[0] < q[2] && rect[2] > q[0] && rect[1] < q[3] && rect[3] > q[1])) o = 0;
     if (o > 0.05) placed.push(rect);
