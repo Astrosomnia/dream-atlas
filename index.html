@@ -53,6 +53,8 @@ body.intro .ui { opacity: 0; }
 .brand h1 { margin: 0; font-family: var(--f-display); font-style: italic; font-weight: 300; font-size: 26px; letter-spacing: .01em; line-height: 1; }
 .brand p { margin: 8px 0 0; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
 .brand .demo { color: var(--gold); opacity: .85; }
+.brand p > span { white-space: nowrap; }
+.brand .s-range::before { content: " · "; }
 .tools { display: flex; gap: 8px; align-items: center; }
 .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--glass); border: 1px solid var(--edge); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--mist); transition: color .2s, border-color .2s; }
 .icon-btn:hover, .icon-btn[aria-pressed="true"] { color: var(--text); border-color: var(--edge-strong); }
@@ -222,6 +224,9 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
 @media (max-width: 760px) {
   .brand h1 { font-size: 22px; }
   .brand p { font-size: 9.5px; }
+  .brand p > span { display: block; }
+  .brand p > span + span { margin-top: 4px; }
+  .brand .s-range::before { content: none; }
   .search { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 70px); display: none; }
   .search input, .search input:focus { width: 100%; }
   body.search-open .search { display: flex; }
@@ -297,7 +302,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.9 · 22 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.10 · 22 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -1493,7 +1498,7 @@ function updateSummary() {
   const f = t => new Date(t).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' });
   const nd = ds.filter(d => d.source === 'demo').length, ny = ds.length - nd;
   const count = nd && ny ? `${nd} <span class="demo">demo</span> · ${ny} yours` : nd ? `${nd} dreams · <span class="demo">demo</span>` : `${ny} dream${ny === 1 ? '' : 's'}`;
-  $('#summary').innerHTML = `${count} · ${f(t0)}${t0 !== t1 ? ' – ' + f(t1) : ''}`;
+  $('#summary').innerHTML = `<span class="s-count">${count}</span><span class="s-range">${f(t0)}${t0 !== t1 ? ' – ' + f(t1) : ''}</span>`;
 }
 function buildMotifUI() {
   const box = $('#motifs');
