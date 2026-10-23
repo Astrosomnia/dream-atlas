@@ -150,6 +150,8 @@ body.panel-open .bottom { right: 416px; }
 .swatches { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 10px; margin-bottom: 14px; }
 .sw { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--mist); }
 .sw .dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.tog { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--mist); cursor: pointer; margin-bottom: 4px; }
+.tog input { width: 16px; height: 16px; accent-color: var(--gold); margin: 0; }
 .seg { display: flex; gap: 6px; margin-top: 4px; }
 .seg button { flex: 1; height: 30px; border-radius: 8px; border: 1px solid var(--edge); color: var(--mist); font-size: 12px; }
 .seg button[aria-pressed="true"] { color: var(--void); background: var(--gold); border-color: var(--gold); }
@@ -310,13 +312,15 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   <div class="krow"><canvas id="kCluster" width="68" height="68"></canvas><span>Clusters and nebulae gather dreams that share a recurring motif. Older dreams drift toward the edges.</span></div>
   <div class="krow"><canvas id="kLine" width="68" height="68"></canvas><span>Select a star to trace what it shares with other dreams</span></div>
   <hr>
-  <h3>Sky shows</h3>
+  <h3>Writing</h3>
+  <label class="tog" for="tidyToggle"><input type="checkbox" id="tidyToggle" checked> Tidy spelling and punctuation</label>
+  <h3 style="margin-top:16px">Sky shows</h3>
   <div class="seg" id="sources"><button data-demo="1">Demo and yours</button><button data-demo="0">Only yours</button></div>
   <div id="sizeBlock">
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.12 · 22 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.13 · 22 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -1311,7 +1315,7 @@ function showDream(d) {
   $('#pBody').innerHTML = `
     <h2>${esc(d.title)}</h2>
     <div class="meta"><span class="feel"><span class="dot" style="background:${feel.hex};color:${feel.hex}"></span>${feel.label}</span>${dotsFor(d.vivid)}${d.lucid ? '<span class="lucid">Lucid</span>' : ''}${d.source === 'you' ? '<span class="yours">Yours</span>' : ''}</div>
-    <div class="sec"><h3>Your account</h3><p class="account">${esc(d.text)}</p></div>
+    <div class="sec"><h3>Your account</h3><p class="account">${esc(shownText(d))}</p></div>
     <div class="sec"><h3>Recurring elements</h3>${tagChips ? `<div class="tags">${tagChips}</div>` : '<p class="note" style="margin:0">No elements tagged yet.</p>'}${d.source === 'you' ? noticedHTML(d) : ''}</div>
     <div class="sec"><h3>Connected dreams · ${rels.length}</h3><div class="links">${links}</div></div>
     <p class="note">${d.source === 'you' ? (d.tagger === 'claude' ? 'Claude tagged this from your words only. ' : 'This dream was added without AI tagging. ') : ''}Connections come only from elements written in each account. Tap one to see every dream that shares it.</p>
@@ -1593,6 +1597,8 @@ $('#sizes').addEventListener('click', e => {
 });
 
 /* which dreams the sky shows */
+let tidyOn = true;
+try { tidyOn = localStorage.getItem('dream-atlas.tidy') !== '0'; } catch (e) {}
 let showDemo = true;
 try { showDemo = localStorage.getItem('dream-atlas.showDemo') !== '0'; } catch (e) {}
 function currentList() { return (showDemo ? DREAMS.slice(0, size) : []).concat(MINE); }
@@ -1602,6 +1608,11 @@ function syncSources() {
   document.querySelectorAll('#sources button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.demo === '1') === showDemo)));
   $('#sizeBlock').hidden = !showDemo;
 }
+$('#tidyToggle').checked = tidyOn;
+$('#tidyToggle').addEventListener('change', e => {
+  tidyOn = e.target.checked; try { localStorage.setItem('dream-atlas.tidy', tidyOn ? '1' : '0'); } catch (err) {}
+  if (selected >= 0 && !ed && body.classList.contains('panel-open')) showDream(model.dreams[selected]);
+});
 $('#sources').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const next = b.dataset.demo === '1'; if (next === showDemo) return;
@@ -1700,7 +1711,7 @@ q.addEventListener('input', () => {
   const s = q.value.trim().toLowerCase();
   if (!s) { setFilter(null, null, false); return; }
   const hits = new Set();
-  model.dreams.forEach(d => { const hay = (d.title + ' ' + d.text + ' ' + d.tags.map(k => model.tags.get(k).label).join(' ')).toLowerCase(); if (hay.includes(s)) hits.add(d.i); });
+  model.dreams.forEach(d => { const hay = (d.title + ' ' + shownText(d) + ' ' + d.text + ' ' + d.tags.map(k => model.tags.get(k).label).join(' ')).toLowerCase(); if (hay.includes(s)) hits.add(d.i); });
   closePanel(); setFilter('search', hits, false);
 });
 q.addEventListener('keydown', e => {
@@ -1823,6 +1834,7 @@ Rules:
 - places: specific settings, lowercase (for example "childhood home", "train station"). Reuse a known place when it is the same place.
 - objects: up to 5 notable things, lowercase: objects, creatures, weather or natural phenomena (for example "tornado", "black dog", "lanterns"). Reuse known ones when they match.
 - noticed: up to 5 other concrete elements that appear in the account but are not already listed anywhere above, lowercase. These are offered to the dreamer as optional tags.
+- tidied: the account exactly as written, with only spelling, capitalisation, punctuation and obvious typos fixed. Never change, add, remove or reorder words beyond correcting a misspelling. Keep the dreamer's phrasing, tense, slang and odd dream logic. If nothing needs fixing, return it unchanged.
 
 Existing motifs (key: label):
 ${v.motifs}
@@ -1832,7 +1844,7 @@ Known places: ${v.places}
 Known objects: ${v.objects}
 
 Reply with only JSON in exactly this shape:
-{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "noticed": []}
+{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "noticed": [], "tidied": ""}
 
 The dream account:
 """
@@ -1857,9 +1869,23 @@ function normalise(raw, text) {
     title: String(raw?.title || '').trim().slice(0, 70) || fallbackTitle(text),
     feel: FEEL[raw?.feel] ? raw.feel : 'calm', vivid, lucid: raw?.lucid === true,
     motifs, motifLabels, motifNear, people: clean(raw?.people, 4, false), places: clean(raw?.places, 3, true), objects: clean(raw?.objects, 5, true),
+    tidied: acceptTidy(raw?.tidied, text) || undefined,
     suggested: clean(raw?.noticed, 6, true).filter(x => !clean(raw?.objects, 5, true).includes(x) && !clean(raw?.places, 3, true).includes(x)),
   };
 }
+// a tidy is accepted only if it's a light touch: same words in the same order, give or take a few spelling fixes
+function acceptTidy(tidied, text) {
+  if (typeof tidied !== 'string') return null;
+  const t = tidied.trim(); if (!t || t === text.trim()) return null;
+  if (t.length < text.length * 0.85 || t.length > text.length * 1.2) return null;
+  const words = x => x.toLowerCase().replace(/[^a-z0-9\s]+/g, '').split(/\s+/).filter(Boolean);
+  const A = words(text), B = words(t);
+  const L = Array.from({ length: A.length + 1 }, () => new Uint16Array(B.length + 1));
+  for (let i = 1; i <= A.length; i++) for (let j = 1; j <= B.length; j++) L[i][j] = A[i - 1] === B[j - 1] ? L[i - 1][j - 1] + 1 : Math.max(L[i - 1][j], L[i][j - 1]);
+  const changed = Math.max(A.length, B.length) - L[A.length][B.length];
+  return changed <= Math.max(2, Math.ceil(A.length * 0.15)) ? t : null;
+}
+const shownText = d => (tidyOn && d.tidied) ? d.tidied : d.text; // the original is always kept in d.text
 function fallbackTitle(text) {
   const w = text.replace(/\s+/g, ' ').trim().split(' ').slice(0, 5).join(' ').replace(/[.,;:!?]+$/, '');
   return w ? w.charAt(0).toUpperCase() + w.slice(1) + (text.trim().split(/\s+/).length > 5 ? '…' : '') : 'Untitled dream';
