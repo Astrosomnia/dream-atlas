@@ -331,7 +331,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.15 · 23 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.16 · 23 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -394,7 +394,8 @@ const FEEL = {
   wonder:  { label: 'Wonder',  hex: '#74d7cf' },
   joy:     { label: 'Joy',     hex: '#f3e08f' },
   longing: { label: 'Longing', hex: '#df9fb2' },
-  calm:    { label: 'Calm',    hex: '#94b5ea' },
+  sadness: { label: 'Sadness', hex: '#7f9fe0' },
+  calm:    { label: 'Calm',    hex: '#a3d4a0' },
   unease:  { label: 'Unease',  hex: '#e5935c' },
   fear:    { label: 'Fear',    hex: '#9c8be2' },
 };
@@ -447,7 +448,7 @@ const DREAMS = [
     "Grandma's house, except the hallway kept going past where it should have ended. Room after room of her things, photos I'd never seen. I kept looking for her but only found her cardigan on a chair."),
   D('d19','2025-07-04','A train into the sea','wonder',4,false,['trains','water'],[],[],['train'],
     "I was on a train that left the coast and kept going straight out across the sea, the tracks a few centimetres under the water. Nobody else on board thought it was strange. The light was gold and green."),
-  D('d20','2025-08-21','Phone call from Grandma','longing',5,false,['grandma'],['Grandma'],[],['phone'],
+  D('d20','2025-08-21','Phone call from Grandma','sadness',5,false,['grandma'],['Grandma'],[],['phone'],
     "My phone rang and it was Grandma. Her voice was clear and normal and she asked if I'd been eating properly. I knew in the dream that she'd died, and I didn't want to say anything in case the call ended."),
   D('d21','2025-09-15',"Teaching a class I'd never taken",'unease',3,false,['school'],[],['high school'],[],
     "I was the teacher at the front of a class, about to give a chemistry lesson, which I know nothing about. The students were waiting. I just kept writing the date on the board very slowly."),
@@ -1746,7 +1747,8 @@ const FEEL_WORDS = {
   joy: ['joy', 'happy', 'happiness', 'joyful', 'fun', 'delight', 'glad', 'excited', 'elated', 'good'],
   fear: ['fear', 'scary', 'scared', 'afraid', 'terrified', 'terror', 'nightmare', 'frightening', 'horror', 'panic', 'dread'],
   unease: ['unease', 'uneasy', 'anxious', 'anxiety', 'stress', 'stressed', 'worried', 'worry', 'nervous', 'awkward', 'uncomfortable', 'weird'],
-  longing: ['longing', 'sad', 'sadness', 'miss', 'missing', 'grief', 'nostalgia', 'nostalgic', 'yearning', 'lonely', 'loss'],
+  longing: ['longing', 'miss', 'missing', 'nostalgia', 'nostalgic', 'yearning', 'romance', 'romantic', 'crush', 'wistful'],
+  sadness: ['sad', 'sadness', 'grief', 'grieving', 'crying', 'cried', 'tears', 'loss', 'mourning', 'heartbroken', 'lonely', 'upset'],
   calm: ['calm', 'peaceful', 'peace', 'quiet', 'serene', 'relaxed', 'gentle', 'restful'],
   wonder: ['wonder', 'awe', 'amazed', 'amazing', 'magical', 'magic', 'beautiful', 'surreal', 'mystical'],
 };
@@ -1927,7 +1929,7 @@ function buildPrompt(text) {
 Rules:
 - Use only what the account says. Never add events, people, places or things that are not written.
 - title: 2 to 6 plain, evocative words in sentence case, using the dreamer's own imagery.
-- feel: the single dominant emotional tone, exactly one of: wonder, joy, longing, calm, unease, fear.
+- feel: the single dominant emotional tone of the whole dream, not a passing moment. Exactly one of: wonder, joy, longing, sadness, calm, unease, fear. Longing is warmly reaching for someone or something absent (old loves, people missed, places past, romance). Sadness is grief, loss or heaviness. Calm is peaceful or ordinary, a dream that didn't feel like much. Recurring dream mechanics (legs that won't run, a phone that won't dial) belong in motifs, not the feeling.
 - vivid: an integer 1 to 5 for how vivid and detailed the dream reads (5 = intensely vivid).
 - lucid: true only if the dreamer says they knew they were dreaming.
 - motifs: 1 to 3 recurring dream motifs, the most central first (the dream is placed with the first). Use an existing motif key from the list below whenever one genuinely fits. Only if none fits, add one new motif as {"key": "snake_case", "label": "Short label"}.
