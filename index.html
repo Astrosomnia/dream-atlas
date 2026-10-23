@@ -320,7 +320,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.13 · 22 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.14 · 23 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -1707,12 +1707,81 @@ $('#btnKey').addEventListener('click', () => { const k = $('#key'); k.hidden = !
 $('#btnSearch').addEventListener('click', () => { body.classList.toggle('search-open'); if (body.classList.contains('search-open')) $('#q').focus(); });
 
 const q = $('#q');
+/* Search: instant and local. Understands feelings, months, years, "lucid", "vivid",
+   broad categories ("animals" finds a farm), plurals and word endings. Claude's hidden themes help too. */
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+const FEEL_WORDS = {
+  joy: ['joy', 'happy', 'happiness', 'joyful', 'fun', 'delight', 'glad', 'excited', 'elated', 'good'],
+  fear: ['fear', 'scary', 'scared', 'afraid', 'terrified', 'terror', 'nightmare', 'frightening', 'horror', 'panic', 'dread'],
+  unease: ['unease', 'uneasy', 'anxious', 'anxiety', 'stress', 'stressed', 'worried', 'worry', 'nervous', 'awkward', 'uncomfortable', 'weird'],
+  longing: ['longing', 'sad', 'sadness', 'miss', 'missing', 'grief', 'nostalgia', 'nostalgic', 'yearning', 'lonely', 'loss'],
+  calm: ['calm', 'peaceful', 'peace', 'quiet', 'serene', 'relaxed', 'gentle', 'restful'],
+  wonder: ['wonder', 'awe', 'amazed', 'amazing', 'magical', 'magic', 'beautiful', 'surreal', 'mystical'],
+};
+const CATEGORIES = {
+  animal: ['animal', 'dog', 'cat', 'bird', 'horse', 'cow', 'sheep', 'pig', 'farm', 'whale', 'fish', 'snake', 'spider', 'wolf', 'bear', 'lion', 'tiger', 'creature', 'pet', 'rabbit', 'owl', 'crow', 'deer', 'insect', 'bee', 'mouse', 'rat', 'duck', 'chicken', 'goat', 'shark', 'monkey', 'fox', 'flock'],
+  water: ['water', 'ocean', 'sea', 'lake', 'river', 'swim', 'flood', 'rain', 'wave', 'tide', 'pool', 'ice', 'beach', 'boat', 'underwater', 'drown', 'harbour', 'harbor'],
+  family: ['family', 'mum', 'mom', 'mother', 'dad', 'father', 'brother', 'sister', 'grandma', 'nan', 'nana', 'gran', 'grandmother', 'grandad', 'grandpa', 'aunt', 'uncle', 'cousin', 'son', 'daughter', 'parent', 'baby'],
+  travel: ['travel', 'train', 'station', 'car', 'bus', 'plane', 'flight', 'airport', 'ship', 'road', 'driving', 'journey', 'luggage', 'ticket', 'platform', 'trip'],
+  transport: ['train', 'station', 'car', 'bus', 'plane', 'flight', 'ship', 'boat', 'bike', 'tram', 'taxi'],
+  home: ['house', 'home', 'room', 'flat', 'apartment', 'attic', 'kitchen', 'bedroom', 'door', 'hallway', 'stair', 'basement', 'garden'],
+  school: ['school', 'exam', 'class', 'classroom', 'teacher', 'test', 'university', 'homework', 'graduation', 'lesson'],
+  weather: ['weather', 'storm', 'tornado', 'rain', 'snow', 'wind', 'thunder', 'lightning', 'hail', 'fog', 'cloud'],
+  nature: ['nature', 'forest', 'tree', 'mountain', 'field', 'flower', 'garden', 'park', 'river', 'lake', 'bush', 'woods'],
+  chase: ['chase', 'chased', 'pursue', 'escape', 'hide', 'hiding', 'running', 'follow'],
+  flying: ['fly', 'flying', 'flew', 'float', 'sky', 'soar'],
+  body: ['body', 'teeth', 'tooth', 'hair', 'hand', 'blood', 'skin', 'eye', 'face'],
+  music: ['music', 'song', 'sing', 'piano', 'concert', 'band', 'guitar', 'radio'],
+  food: ['food', 'eat', 'eating', 'dinner', 'cake', 'scone', 'bread', 'bakery', 'kitchen', 'restaurant'],
+  death: ['death', 'dead', 'died', 'dying', 'funeral', 'ghost', 'grave'],
+};
+const STOP = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'my', 'me', 'i', 'about', 'with', 'and', 'or', 'was', 'were', 'is', 'dream', 'dreams', 'dreamt', 'dreamed', 'where', 'when', 'that', 'some', 'any', 'all', 'show', 'find', 'to', 'from', 'at']);
+const stem = w => w.length > 4 ? w.replace(/(ies)$/, 'y').replace(/(ing|ed|es|s)$/, '') : w.replace(/s$/, '');
+function searchHay(d) {
+  const t = new Date(d.t);
+  const tagWords = d.tags.map(k => model.tags.get(k).label).join(' ');
+  const raw = [d.title, shownText(d), d.text, tagWords, (d.suggested || []).join(' '), (d.themes || []).join(' '), FEEL[d.feel]?.label || '', MONTHS[t.getMonth()], String(t.getFullYear())].join(' ').toLowerCase();
+  const words = raw.replace(/[^a-z0-9'\s-]+/g, ' ').replace(/'s\b/g, '').split(/[\s-]+/).filter(Boolean);
+  return { raw, stems: new Set(words.map(stem)), month: t.getMonth(), year: t.getFullYear() };
+}
+function termTest(term) {
+  const w = term.replace(/[^a-z0-9']/g, '');
+  if (!w) return null;
+  if (w === 'lucid') return (d) => d.lucid;
+  if (w === 'vivid') return (d) => d.vivid >= 4;
+  if (w === 'recent' || w === 'latest') return (d, h, ctx) => ctx.newest - d.t < 30 * 864e5;
+  const ABBR = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11 };
+  const mi = MONTHS.indexOf(w) >= 0 ? MONTHS.indexOf(w) : (w in ABBR ? ABBR[w] : -1);
+  if (mi >= 0) return (d, h) => h.month === mi;
+  if (/^(19|20)\d\d$/.test(w)) return (d, h) => h.year === Number(w);
+  const feel = Object.keys(FEEL_WORDS).find(k => FEEL_WORDS[k].includes(w));
+  const cat = CATEGORIES[w] ? w : CATEGORIES[stem(w)] ? stem(w) : null;
+  const sw = stem(w);
+  return (d, h) => {
+    if (feel && d.feel === feel) return true;
+    if (h.stems.has(sw) || h.raw.includes(w)) return true;
+    if (cat && CATEGORIES[cat].some(x => h.stems.has(stem(x)))) return true;
+    return [...h.stems].some(x => x.length > 3 && sw.length > 3 && (x.startsWith(sw) || sw.startsWith(x)));
+  };
+}
+function smartSearch(query) {
+  const terms = query.toLowerCase().split(/\s+/).filter(t => t && !STOP.has(t));
+  const tests = terms.map(termTest).filter(Boolean);
+  if (!tests.length) return new Set();
+  const ctx = { newest: Math.max(0, ...model.dreams.map(d => d.t)) };
+  const hays = model.dreams.map(searchHay);
+  const all = new Set(), any = new Set();
+  model.dreams.forEach((d, i) => {
+    const pass = tests.map(t => t(d, hays[i], ctx));
+    if (pass.every(Boolean)) all.add(i);
+    if (pass.some(Boolean)) any.add(i);
+  });
+  return all.size ? all : any; // every word if possible, otherwise any of them
+}
 q.addEventListener('input', () => {
-  const s = q.value.trim().toLowerCase();
+  const s = q.value.trim();
   if (!s) { setFilter(null, null, false); return; }
-  const hits = new Set();
-  model.dreams.forEach(d => { const hay = (d.title + ' ' + shownText(d) + ' ' + d.text + ' ' + d.tags.map(k => model.tags.get(k).label).join(' ')).toLowerCase(); if (hay.includes(s)) hits.add(d.i); });
-  closePanel(); setFilter('search', hits, false);
+  closePanel(); setFilter('search', smartSearch(s), false);
 });
 q.addEventListener('keydown', e => {
   if (e.key === 'Enter' && filterSet && filterSet.size) { const first = [...filterSet][0]; q.blur(); body.classList.remove('search-open'); if (filterSet.size === 1) { panelMode = 'dream'; selectDream(first); } else setFilter('search', filterSet, true); }
@@ -1835,6 +1904,7 @@ Rules:
 - objects: up to 5 notable things, lowercase: objects, creatures, weather or natural phenomena (for example "tornado", "black dog", "lanterns"). Reuse known ones when they match.
 - noticed: up to 5 other concrete elements that appear in the account but are not already listed anywhere above, lowercase. These are offered to the dreamer as optional tags.
 - tidied: the account exactly as written, with only spelling, capitalisation, punctuation and obvious typos fixed. Never change, add, remove or reorder words beyond correcting a misspelling. Keep the dreamer's phrasing, tense, slang and odd dream logic. If nothing needs fixing, return it unchanged.
+- themes: up to 6 broad lowercase words someone might search for this dream by, that the account implies but may not say (for example "animals" for a farm, "family" for Mum, "travel" for an airport). Only categories the account supports.
 
 Existing motifs (key: label):
 ${v.motifs}
@@ -1844,7 +1914,7 @@ Known places: ${v.places}
 Known objects: ${v.objects}
 
 Reply with only JSON in exactly this shape:
-{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "noticed": [], "tidied": ""}
+{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "noticed": [], "tidied": "", "themes": []}
 
 The dream account:
 """
@@ -1870,6 +1940,7 @@ function normalise(raw, text) {
     feel: FEEL[raw?.feel] ? raw.feel : 'calm', vivid, lucid: raw?.lucid === true,
     motifs, motifLabels, motifNear, people: clean(raw?.people, 4, false), places: clean(raw?.places, 3, true), objects: clean(raw?.objects, 5, true),
     tidied: acceptTidy(raw?.tidied, text) || undefined,
+    themes: clean(raw?.themes, 6, true),
     suggested: clean(raw?.noticed, 6, true).filter(x => !clean(raw?.objects, 5, true).includes(x) && !clean(raw?.places, 3, true).includes(x)),
   };
 }
