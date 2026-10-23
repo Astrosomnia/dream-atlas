@@ -85,6 +85,15 @@ body.intro .ui { opacity: 0; }
 .bottom > * { pointer-events: auto; }
 .motifs { display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; min-width: 0; padding: 2px; mask-image: linear-gradient(90deg, #000 92%, transparent); }
 .motifs::-webkit-scrollbar { display: none; }
+.bottom-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
+#qchip { flex: none; display: inline-flex; align-items: center; height: 30px; max-width: 46vw; border-radius: 15px; border: 1px solid rgba(236, 215, 162, .45); background: rgba(236, 215, 162, .08); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--text); font-size: 12.5px; overflow: hidden; animation: qchipIn .5s var(--ease); }
+#qchip[hidden] { display: none; }
+#qchip .qt { padding: 0 2px 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; font-family: var(--f-display); font-size: 14px; }
+#qchip .n { font-family: var(--f-mono); font-size: 10.5px; color: var(--mist); padding-left: 6px; }
+#qchip .x { height: 100%; width: 30px; display: grid; place-items: center; color: var(--mist); flex: none; }
+#qchip .x:hover { color: var(--text); }
+#qchip .x svg { width: 11px; height: 11px; }
+@keyframes qchipIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 .motifs .lbl { font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-right: 6px; white-space: nowrap; }
 .chip { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; height: 30px; padding: 0 12px; border-radius: 15px; background: var(--glass); border: 1px solid var(--edge); color: var(--mist); font-size: 12.5px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: color .2s, border-color .2s, background .2s; }
 .chip:hover { color: var(--text); border-color: var(--edge-strong); }
@@ -142,7 +151,9 @@ body.panel-open .bottom { right: 416px; }
 
 /* ---------- key popover ---------- */
 #key { position: fixed; z-index: 26; top: calc(env(safe-area-inset-top, 0px) + 66px); right: max(16px, env(safe-area-inset-right, 0px)); width: 300px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 18px 20px 20px;
-  background: var(--glass-strong); border: 1px solid var(--edge); border-radius: 14px; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
+  background: var(--glass-strong); border: 1px solid var(--edge); border-radius: 14px; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  transform: translateX(24px); opacity: 0; pointer-events: none; visibility: hidden; transition: transform .6s var(--ease), opacity .45s var(--ease), visibility 0s linear .6s; }
+body.key-open #key { transform: none; opacity: 1; pointer-events: auto; visibility: visible; transition: transform .6s var(--ease), opacity .45s var(--ease), visibility 0s; }
 #key h3 { margin: 0 0 12px; font-family: var(--f-mono); font-weight: 400; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 #key h3 + * { margin-bottom: 4px; }
 .krow { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: center; font-size: 12.5px; color: var(--mist); line-height: 1.4; padding: 5px 0; }
@@ -267,7 +278,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   .s-actions { justify-content: flex-end; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui, #panel, .bottom { transition: none; }
+  .ui, #panel, .bottom, #key { transition: none !important; }
 }
 </style>
 
@@ -304,7 +315,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   </div>
 </header>
 
-<div id="key" class="ui" hidden>
+<div id="key">
   <h3>How to read the sky</h3>
   <div class="swatches" id="swatches"></div>
   <div class="krow"><canvas id="kBright" width="68" height="68"></canvas><span>Brightness is how vivid the dream felt</span></div>
@@ -320,12 +331,15 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.14 · 23 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.15 · 23 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
 <div class="bottom ui">
-  <div class="motifs" id="motifs"></div>
+  <div class="bottom-left">
+    <span id="qchip" hidden><span class="qt"></span><span class="n"></span><button class="x" id="qchipX" aria-label="Clear search" title="Clear search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></span>
+    <div class="motifs" id="motifs"></div>
+  </div>
   <div class="bottom-right">
     <div class="hint" id="hint">Drag to orbit · scroll to zoom · click a star</div>
     <button class="record" id="btnRecord" title="Record a dream (N)" aria-label="Record a dream">
@@ -1282,8 +1296,9 @@ function clearSelection(restore = true) {
 
 function setFilter(key, set, fly = true) {
   filterKey = key; filterSet = set;
+  if (key !== 'search' && $('#q').value) $('#q').value = '';
   if (selected >= 0) clearSelection(false);
-  setStates(); syncChips();
+  setStates(); syncChips(); syncSearchChip();
   if (set && set.size && fly) {
     const c = new THREE.Vector3(); set.forEach(i => c.add(model.dreams[i].pos)); c.multiplyScalar(1 / set.size);
     let rad = 0; set.forEach(i => rad = Math.max(rad, model.dreams[i].pos.distanceTo(c)));
@@ -1296,7 +1311,9 @@ function setFilter(key, set, fly = true) {
    Panel
    ============================================================ */
 const body = document.body;
-function openPanel() { body.classList.add('panel-open'); }
+function keyOpen() { return body.classList.contains('key-open'); }
+function setKey(open) { body.classList.toggle('key-open', open); $('#btnKey').setAttribute('aria-pressed', String(open)); }
+function openPanel() { setKey(false); body.classList.add('panel-open'); }
 function closePanel() { body.classList.remove('panel-open'); ed = null; }
 
 function dotsFor(v) { return '<span class="vivid" title="Vividness ' + v + ' of 5">' + Array.from({ length: 5 }, (_, k) => '<i class="' + (k < v ? 'on' : '') + '"></i>').join('') + '</span>'; }
@@ -1523,6 +1540,14 @@ function buildMotifUI() {
   const items = model.clusters.map(cl => `<button class="chip" data-key="${esc(cl.key)}" aria-pressed="false"><span class="dot" style="background:${FEEL[cl.feels[0]].hex}"></span>${esc(cl.label)}<span class="n">${cl.count}</span></button>`).join('');
   box.innerHTML = items ? `<span class="lbl">Recurring</span>${items}` : `<span class="lbl">No recurring motifs yet</span>`;
 }
+function syncSearchChip() {
+  const c = $('#qchip'), s = $('#q').value.trim();
+  if (filterKey !== 'search' || !s) { c.hidden = true; return; }
+  c.querySelector('.qt').textContent = '\u201c' + s + '\u201d';
+  c.querySelector('.n').textContent = filterSet ? filterSet.size : 0;
+  c.hidden = false;
+}
+$('#qchipX').addEventListener('click', e => { e.stopPropagation(); $('#q').value = ''; $('#q').blur(); body.classList.remove('search-open'); setFilter(null, null, false); });
 function syncChips() { document.querySelectorAll('#motifs .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.key === filterKey ? 'true' : 'false')); }
 $('#motifs').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
@@ -1626,7 +1651,7 @@ $('#sources').addEventListener('click', e => {
 let tour = null;
 function enterAmbient() {
   if (ambient || capturing) return;
-  ambient = true; body.classList.add('ambient'); $('#key').hidden = true; $('#btnKey').setAttribute('aria-pressed', 'false');
+  ambient = true; body.classList.add('ambient'); setKey(false);
   closePanel(); clearSelection(false); if (filterKey) setFilter(null, null, false);
   hideTip(); controls.enabled = false; tween = null;
   tour = { i: 0, hold: 0, order: model.clusters.map((_, k) => k) };
@@ -1679,9 +1704,12 @@ canvas.addEventListener('pointerup', e => {
   if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
   if (moved > 6) return;
   const i = pick(e.clientX, e.clientY);
-  if (i >= 0) { panelMode = 'dream'; selectDream(i, { keepSaved: selected >= 0 }); }
+  if (i >= 0) { setKey(false); panelMode = 'dream'; selectDream(i, { keepSaved: selected >= 0 }); }
+  else if (keyOpen()) { setKey(false); }
   else if (selected >= 0) { closePanel(); clearSelection(true); panelMode = null; }
-  else if (filterKey) { setFilter(null, null, false); }
+  else if (panelMode === 'list' && body.classList.contains('panel-open')) { closePanel(); panelMode = null; }
+  else if (body.classList.contains('search-open') && innerWidth <= 760) { body.classList.remove('search-open'); q.blur(); }
+  else if (filterKey && filterKey !== 'search') { setFilter(null, null, false); }
 });
 canvas.addEventListener('pointermove', e => {
   noteInput();
@@ -1703,7 +1731,11 @@ window.addEventListener('pointermove', e => { if (ambient) noteInput(); });
 $('#btnAmbient').addEventListener('click', e => { e.stopPropagation(); enterAmbient(); });
 $('#btnReset').addEventListener('click', () => { closePanel(); clearSelection(false); if (filterKey) setFilter(null, null, false); panelMode = null; flyTo(overviewPose(), 2.4); });
 $('#btnList').addEventListener('click', () => { if (panelMode === 'list' && body.classList.contains('panel-open')) { closePanel(); panelMode = null; return; } showList(); });
-$('#btnKey').addEventListener('click', () => { const k = $('#key'); k.hidden = !k.hidden; $('#btnKey').setAttribute('aria-pressed', String(!k.hidden)); });
+$('#btnKey').addEventListener('click', () => {
+  if (keyOpen()) { setKey(false); return; }
+  if (body.classList.contains('panel-open') && (panelMode === 'list' || panelMode === 'dream')) { closePanel(); if (selected >= 0) clearSelection(true); panelMode = null; }
+  setKey(true);
+});
 $('#btnSearch').addEventListener('click', () => { body.classList.toggle('search-open'); if (body.classList.contains('search-open')) $('#q').focus(); });
 
 const q = $('#q');
@@ -1798,7 +1830,7 @@ window.addEventListener('keydown', e => {
   if (e.target === q) return;
   if (e.target.closest && e.target.closest('input, textarea')) return;
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openCapture(); return; }
-  if (e.key === 'Escape') { if (!$('#key').hidden) { $('#key').hidden = true; $('#btnKey').setAttribute('aria-pressed', 'false'); return; } if (body.classList.contains('panel-open')) { closePanel(); clearSelection(true); panelMode = null; } else if (filterKey) setFilter(null, null, false); }
+  if (e.key === 'Escape') { if (keyOpen()) { setKey(false); return; } if (body.classList.contains('panel-open')) { closePanel(); clearSelection(true); panelMode = null; } else if (filterKey) setFilter(null, null, false); }
   else if (e.key === 'a' || e.key === 'A') { if (!ambient) setTimeout(enterAmbient, 30); }
   else if (e.key === 'r' || e.key === 'R') $('#btnReset').click();
   else if (e.key === 'l' || e.key === 'L') $('#btnList').click();
@@ -2010,7 +2042,7 @@ function openCapture() {
   if (capturing) return;
   if (ambient) exitAmbient();
   closePanel(); clearSelection(false); panelMode = null; hideTip();
-  $('#key').hidden = true; $('#btnKey').setAttribute('aria-pressed', 'false'); body.classList.remove('search-open');
+  setKey(false); body.classList.remove('search-open');
   if (!dateIn.value) dateIn.value = localISO(new Date());
   dateIn.max = localISO(new Date());
   if (!ta.value) { try { ta.value = localStorage.getItem(DRAFT) || ''; } catch (e) {} }
