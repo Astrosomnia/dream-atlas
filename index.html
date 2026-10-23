@@ -297,7 +297,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.8 · 22 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.9 · 22 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -2012,7 +2012,7 @@ function frame(now) {
   if (FROZEN === null) { elapsed += rdt; U.uTime.value = elapsed; }
 
   stepTween(rdt); stepAmbient(rdt);
-  if (!tween && !ambient) controls.update();
+  if (!tween && !ambient) { controls.update(); keepFocusInView(); } else focusR = null;
   if (!ambient && !tween && !capturing && !nova.state && !nova.pending && FROZEN === null && !SHOT && now - lastInput > 45000 && document.activeElement !== q) enterAmbient();
 
   // a newly recorded dream: hidden until its supernova, then flares and settles
@@ -2052,6 +2052,19 @@ function frame(now) {
   updateLabels();
   renderer.render(scene, camera);
 }
+// while a dream is open, zooming pulls back from the star itself, so it stays put on screen above the panel
+let focusR = null;
+const _off = new THREE.Vector3();
+function keepFocusInView() {
+  if (selected < 0 || !body.classList.contains('panel-open')) { focusR = null; return; }
+  const star = model.dreams[selected]?.pos; if (!star) { focusR = null; return; }
+  const r = camera.position.distanceTo(controls.target);
+  if (focusR && Math.abs(r - focusR) > 1e-4) {
+    _off.copy(controls.target).sub(star).multiplyScalar(r / focusR).add(star).sub(controls.target);
+    controls.target.add(_off); camera.position.add(_off);
+  }
+  focusR = r;
+}
 function startLoop() { last = performance.now(); lastRender = 0; renderer.setAnimationLoop(frame); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) renderer.setAnimationLoop(null); else startLoop(); });
 
@@ -2074,7 +2087,7 @@ else {
 controls.update();
 startLoop();
 loadMine();
-window.__atlas = { sel: () => selected, novaP: () => nova.state ? nova.mat.uniforms.uP.value : (nova.pending ? -0.5 : -1), model: () => model, select: i => selectDream(i), ambient: enterAmbient, arrive: rec => { MINE.push(rec); arrive(rec); } };
+window.__atlas = { screen: i => { const v = model.dreams[i].pos.clone().project(camera); return [Math.round((v.x + 1) / 2 * innerWidth), Math.round((1 - v.y) / 2 * innerHeight)]; }, sel: () => selected, novaP: () => nova.state ? nova.mat.uniforms.uP.value : (nova.pending ? -0.5 : -1), model: () => model, select: i => selectDream(i), ambient: enterAmbient, arrive: rec => { MINE.push(rec); arrive(rec); } };
 </script>
 
 </body>
