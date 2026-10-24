@@ -145,6 +145,8 @@ body.panel-open .bottom { right: 416px; }
 .link .lt { font-family: var(--f-display); font-style: italic; font-size: 16px; }
 .link .why { grid-column: 2; font-size: 12px; color: var(--mist); line-height: 1.45; }
 .link .dt { font-family: var(--f-mono); font-size: 10px; color: var(--faint); letter-spacing: .06em; margin-left: 8px; font-style: normal; }
+.details { margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: var(--mist); }
+.details .lbl { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 10px; }
 .note { margin-top: 26px; font-size: 11.5px; color: var(--faint); line-height: 1.5; }
 .year { font-family: var(--f-mono); font-size: 10px; letter-spacing: .14em; color: var(--faint); margin: 22px 0 6px; }
 .year:first-child { margin-top: 8px; }
@@ -343,7 +345,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.18 · 23 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.19 · 24 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -416,8 +418,13 @@ const FEEL = {
 };
 const MOTIF = { water: 'Water', rooms: 'Houses with extra rooms', grandma: 'Grandma', chased: 'Being chased',
   school: 'School and exams', flying: 'Flying', trains: 'Trains and stations', sky: 'Creatures in the sky', memory: 'Kept memories' };
-const TAG_WEIGHT = { motif: 1, person: 1, place: 1, object: 1 }; // any shared element connects; only motifs decide position
-const TYPE_LABEL = { motif: 'motif', person: 'person', place: 'place', object: 'thing' };
+const TAG_WEIGHT = { motif: 1, person: 1, place: 1, object: 1, detail: 1 }; // any shared element connects; only motifs decide position
+const TYPE_LABEL = { motif: 'motif', person: 'person', place: 'place', object: 'thing', detail: 'detail' };
+const DETAIL_PROMOTE = 3; // a detail starts connecting dreams once this many share it
+// anonymous people and everyday scenery never connect dreams by themselves; they're shown as details instead
+const GENERIC = new Set(['guy', 'guys', 'man', 'men', 'woman', 'women', 'person', 'someone', 'somebody', 'stranger', 'strangers', 'people', 'crowd', 'kid', 'kids', 'boy', 'girl', 'everyone', 'lady', 'dude', 'figure',
+  'hill', 'hills', 'tree', 'trees', 'grass', 'sky', 'ground', 'floor', 'wall', 'walls', 'road', 'street', 'path', 'field', 'cloud', 'clouds', 'air', 'darkness']);
+const isGeneric = s => GENERIC.has(String(s).toLowerCase().trim().replace(/^(the|a|an|some|this|that)\s+/, ''));
 
 /* ============================================================
    Demo archive (fictional). Original accounts are kept verbatim.
@@ -530,18 +537,23 @@ const FULL_T1 = Math.max(...DREAMS.map(d => Date.parse(d.date)));
 const FULL_T0 = Math.min(...DREAMS.map(d => Date.parse(d.date)));
 
 function buildModel(list) {
-  const dreams = list.map((d, i) => ({ ...d, i, t: Date.parse(d.date + 'T06:00:00'), tags: [], motifs: d.motifs || [], people: d.people || [], places: d.places || [], objects: d.objects || [] }));
+  const dreams = list.map((d, i) => ({ ...d, i, t: Date.parse(d.date + 'T06:00:00'), tags: [], motifs: d.motifs || [], people: d.people || [], places: d.places || [], objects: d.objects || [], details: d.details || [] }));
   const tags = new Map();
   const add = (d, type, label) => {
     const key = type + ':' + label.toLowerCase();
     if (!tags.has(key)) tags.set(key, { key, type, label, members: [] });
     tags.get(key).members.push(d.i); d.tags.push(key);
   };
+  const detailCount = new Map();
+  dreams.forEach(d => new Set(d.details.map(x => x.toLowerCase())).forEach(x => detailCount.set(x, (detailCount.get(x) || 0) + 1)));
   dreams.forEach(d => {
     d.motifs.forEach(m => add(d, 'motif', MOTIF[m] || m));
-    d.people.forEach(p => add(d, 'person', p));
-    d.places.forEach(p => add(d, 'place', p));
-    d.objects.forEach(o => add(d, 'object', o));
+    d.people.forEach(p => { if (!isGeneric(p)) add(d, 'person', p); });
+    d.places.forEach(p => { if (!isGeneric(p)) add(d, 'place', p); });
+    d.objects.forEach(o => { if (!isGeneric(o)) add(d, 'object', o); });
+    // a detail stays quiet until it recurs; then it becomes a connection like any other
+    d.details.forEach(x => { if (!isGeneric(x) && detailCount.get(x.toLowerCase()) >= DETAIL_PROMOTE) add(d, 'detail', x); });
+    d.quiet = [...new Set([...d.people, ...d.places, ...d.objects].filter(isGeneric).map(x => x.toLowerCase()).concat(d.details.filter(x => !d.tags.includes('detail:' + x.toLowerCase()))))];
   });
   const mkey = m => 'motif:' + (MOTIF[m] || m).toLowerCase();
   dreams.forEach(d => {
@@ -1349,7 +1361,7 @@ function showDream(d) {
     <h2>${esc(d.title)}</h2>
     <div class="meta"><span class="feel"><span class="dot" style="background:${feel.hex};color:${feel.hex}"></span>${feel.label}</span>${dotsFor(d.vivid)}${d.lucid ? '<span class="lucid">Lucid</span>' : ''}${d.source === 'you' ? '<span class="yours">Yours</span>' : ''}</div>
     <div class="sec"><h3>Your account</h3><p class="account">${esc(shownText(d))}</p></div>
-    <div class="sec"><h3>Recurring elements</h3>${tagChips ? `<div class="tags">${tagChips}</div>` : '<p class="note" style="margin:0">No elements tagged yet.</p>'}${d.source === 'you' ? noticedHTML(d) : ''}</div>
+    <div class="sec"><h3>Recurring elements</h3>${tagChips ? `<div class="tags">${tagChips}</div>` : '<p class="note" style="margin:0">No elements tagged yet.</p>'}${d.quiet.length ? `<p class="details"><span class="lbl">Details</span>${d.quiet.map(esc).join(' · ')}</p>` : ''}${d.source === 'you' ? noticedHTML(d) : ''}</div>
     <div class="sec"><h3>Connected dreams · ${rels.length}</h3><div class="links">${links}</div></div>
     <p class="note">${d.source === 'you' ? (d.tagger === 'claude' ? 'Claude tagged this from your words only. ' : 'This dream was added without AI tagging. ') : ''}Connections come only from elements written in each account. Tap one to see every dream that shares it.</p>
     ${d.source === 'you' ? `<div class="p-actions" id="pActions">${ACTIONS_IDLE}</div>` : ''}`;
@@ -1386,22 +1398,22 @@ $('#pClose').addEventListener('click', () => { closePanel(); clearSelection(true
    ============================================================ */
 const ACTIONS_IDLE = '<button class="btn ghost" data-act="edit">Edit tags</button><button class="btn ghost" data-act="remove">Remove from sky</button>';
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-const KIND_LABEL = { people: 'People', places: 'Places', objects: 'Things' };
-const ADD_PH = { motif: 'Name a new motif', people: 'Add a person', places: 'Add a place', objects: 'Add a thing' };
+const KIND_LABEL = { people: 'People', places: 'Places', objects: 'Things', details: 'Details' };
+const ADD_PH = { motif: 'Name a new motif', people: 'Add a person', places: 'Add a place', objects: 'Add a thing', details: 'Add a detail' };
 const motifKey = s => String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 32);
 const mineRec = id => MINE.find(x => x.id === id);
 const motifName = (k, d) => MOTIF[k] || d?.motifLabels?.[k] || k.replace(/_/g, ' ');
 const splitPair = v => { const i = v.indexOf('|'); return [v.slice(0, i), v.slice(i + 1)]; };
 
 function noticedHTML(d) {
-  const left = (d.suggested || []).filter(x => !(d.objects || []).includes(x) && !(d.places || []).includes(x) && !(d.people || []).includes(x));
+  const left = (d.suggested || []).filter(x => !(d.objects || []).includes(x) && !(d.places || []).includes(x) && !(d.people || []).includes(x) && !(d.details || []).includes(x));
   if (!left.length) return '';
   return `<div class="noticed"><span class="lbl">Also in your account. Tap to tag:</span><div class="tags">${left.map(x => `<button class="tag dashed" data-quick="${esc(x)}">+ ${esc(x)}</button>`).join('')}</div></div>`;
 }
 function openEditor(id) {
   const r = mineRec(id); if (!r) return;
   const d = JSON.parse(JSON.stringify(r));
-  ['motifs', 'people', 'places', 'objects', 'suggested'].forEach(k => d[k] = Array.isArray(d[k]) ? d[k] : []);
+  ['motifs', 'people', 'places', 'objects', 'details', 'suggested'].forEach(k => d[k] = Array.isArray(d[k]) ? d[k] : []);
   d.motifLabels = d.motifLabels || {};
   ed = { id, d, adding: null };
   renderEditor(); $('#pBody').scrollTop = 0;
@@ -1431,8 +1443,8 @@ function renderEditor() {
     <div class="sec"><h3>Vividness</h3><div class="ed-viv">${viv}</div></div>
     <div class="sec"><h3>Placed with</h3><p class="ed-hint">${d.motifs.length ? 'Your star sits with its home motif. Tap another motif to move it there.' : 'No motif yet, so this star sits on its own. Add one to place it.'}</p>
       ${motifChips ? `<div class="tags">${motifChips}</div>` : ''}<div class="tags" style="margin-top:8px">${motifSugg}</div>${ed.adding === 'motif' ? addBox('motif') : ''}</div>
-    ${group('people')}${group('places')}${group('objects')}
-    <p class="note">People, places and things link this dream to others. Only motifs decide where its star sits.</p>
+    ${group('people')}${group('places')}${group('objects')}${group('details')}
+    <p class="note">People, places and things link this dream to others. Details link only once ${DETAIL_PROMOTE} dreams share one. Only motifs decide where its star sits.</p>
     <div class="ed-foot"><button class="btn ghost" data-ed="cancel">Cancel</button><button class="btn primary" data-ed="save">Save</button></div>
   </div>`;
   if (ed.adding) { renderMatches(); $('#edNew').focus(); }
@@ -1789,7 +1801,7 @@ const stem = w => w.length > 4 ? w.replace(/(ies)$/, 'y').replace(/(ing|ed|es|s)
 function searchHay(d) {
   const t = new Date(d.t);
   const tagWords = d.tags.map(k => model.tags.get(k).label).join(' ');
-  const raw = [d.title, shownText(d), d.text, tagWords, (d.suggested || []).join(' '), (d.themes || []).join(' '), FEEL[d.feel]?.label || '', MONTHS[t.getMonth()], String(t.getFullYear())].join(' ').toLowerCase();
+  const raw = [d.title, shownText(d), d.text, tagWords, (d.suggested || []).join(' '), (d.themes || []).join(' '), (d.details || []).join(' '), d.people.join(' '), d.places.join(' '), d.objects.join(' '), FEEL[d.feel]?.label || '', MONTHS[t.getMonth()], String(t.getFullYear())].join(' ').toLowerCase();
   const words = raw.replace(/[^a-z0-9'\s-]+/g, ' ').replace(/'s\b/g, '').split(/[\s-]+/).filter(Boolean);
   return { raw, stems: new Set(words.map(stem)), month: t.getMonth(), year: t.getFullYear() };
 }
@@ -1929,12 +1941,12 @@ async function callTagger(text, signal) {
 }
 const samplePromise = Promise.resolve({ json: callTagger });
 function vocabulary() {
-  const by = { person: new Set(), place: new Set(), object: new Set() };
-  currentList().forEach(d => { (d.people || []).forEach(x => by.person.add(x)); (d.places || []).forEach(x => by.place.add(x)); (d.objects || []).forEach(x => by.object.add(x)); });
+  const by = { person: new Set(), place: new Set(), object: new Set(), detail: new Set() };
+  currentList().forEach(d => { (d.people || []).forEach(x => isGeneric(x) || by.person.add(x)); (d.places || []).forEach(x => isGeneric(x) || by.place.add(x)); (d.objects || []).forEach(x => isGeneric(x) || by.object.add(x)); (d.details || []).forEach(x => by.detail.add(x)); });
   const list = s => [...s].slice(0, 80).join(', ') || 'none yet';
   return {
     motifs: Object.entries(MOTIF).map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\n(If you add a new motif, also give it "near": the key of the existing motif above that is closest in meaning, e.g. {"key": "storms", "label": "Storms", "near": "water"}.)',
-    people: list(by.person), places: list(by.place), objects: list(by.object),
+    people: list(by.person), places: list(by.place), objects: list(by.object), details: list(by.detail),
   };
 }
 function buildPrompt(text) {
@@ -1947,11 +1959,12 @@ Rules:
 - feel: the single dominant emotional tone of the whole dream, not a passing moment. Exactly one of: wonder, joy, longing, sadness, calm, unease, fear. Longing is warmly reaching for someone or something absent (old loves, people missed, places past, romance). Sadness is grief, loss or heaviness. Calm is peaceful or ordinary, a dream that didn't feel like much. Recurring dream mechanics (legs that won't run, a phone that won't dial) belong in motifs, not the feeling.
 - vivid: an integer 1 to 5 for how vivid and detailed the dream reads (5 = intensely vivid).
 - lucid: true only if the dreamer says they knew they were dreaming.
-- motifs: 1 to 3 recurring dream motifs, the most central first (the dream is placed with the first). Use an existing motif key from the list below whenever one genuinely fits. Only if none fits, add one new motif as {"key": "snake_case", "label": "Short label"}.
-- people: people or characters the account names or clearly identifies (for example "Mum", "my brother", "an old teacher"). If it is someone in the known list, reuse that exact spelling.
-- places: specific settings, lowercase (for example "childhood home", "train station"). Reuse a known place when it is the same place.
-- objects: up to 5 notable things, lowercase: objects, creatures, weather or natural phenomena (for example "tornado", "black dog", "lanterns"). Reuse known ones when they match.
-- noticed: up to 5 other concrete elements that appear in the account but are not already listed anywhere above, lowercase. These are offered to the dreamer as optional tags.
+- motifs: 1 to 3 motifs: the recurring situations or themes of the dream, at the level most likely to recur across someone's dreams (for example "being chased", "waiting for a turn that never comes", "sport", "school", "water"). Prefer situations over settings, and a broader level over a one-off specific (a golf dream suggests "sport", with golf kept as a place or detail). Never base a motif on a simile or comparison. The most central first (the dream is placed with the first). Use an existing motif key from the list below whenever one genuinely fits. Only if none fits, add one new motif as {"key": "snake_case", "label": "Short label"}.
+- people: named people or recurring roles the account identifies (for example "Jono", "Mum", "my brother", "an old teacher"). Never anonymous strangers such as "a guy", "someone", "a woman" or "people": put those in details. If it is someone in the known list, reuse that exact spelling.
+- places: specific, meaningful settings, lowercase (for example "childhood home", "train station", "golf course"). Not generic scenery such as "hill", "trees", "sky" or "road": put that in details. Reuse a known place when it is the same place.
+- objects: up to 5 notable things actually present in the dream, lowercase: objects, creatures, weather or natural phenomena (for example "tornado", "black dog", "lanterns"). Never something that only appears in a simile or comparison: "he ran like a cheetah" has no cheetah in it. Reuse known ones when they match.
+- details: up to 6 short lowercase phrases for setting, atmosphere and other memorable cues that are not already people, places or things above. Describe the quality, not just a bare noun (for example "very high up", "dense trees", "night", "heavy rain", "a stranger leaping like an animal"). Reuse a known detail's exact wording when it is the same cue.
+- noticed: up to 5 other concrete elements that appear in the account but are not already listed anywhere above, including details, lowercase. These are offered to the dreamer as optional tags.
 - tidied: the account exactly as written, with only spelling, capitalisation, punctuation and obvious typos fixed. Never change, add, remove or reorder words beyond correcting a misspelling. Keep the dreamer's phrasing, tense, slang and odd dream logic. If nothing needs fixing, return it unchanged.
 - themes: up to 6 broad lowercase words someone might search for this dream by, that the account implies but may not say (for example "animals" for a farm, "family" for Mum, "travel" for an airport). Only categories the account supports.
 
@@ -1961,9 +1974,10 @@ ${v.motifs}
 Known people: ${v.people}
 Known places: ${v.places}
 Known objects: ${v.objects}
+Known details: ${v.details}
 
 Reply with only JSON in exactly this shape:
-{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "noticed": [], "tidied": "", "themes": []}
+{"title": "", "feel": "", "vivid": 3, "lucid": false, "motifs": [], "people": [], "places": [], "objects": [], "details": [], "noticed": [], "tidied": "", "themes": []}
 
 The dream account:
 """
@@ -1984,13 +1998,16 @@ function normalise(raw, text) {
     motifs.push(k);
   });
   let vivid = Math.round(Number(raw?.vivid)); if (!(vivid >= 1 && vivid <= 5)) vivid = 3;
+  const people = clean(raw?.people, 6, false), places = clean(raw?.places, 5, true), objects = clean(raw?.objects, 7, true);
+  const generic = [...people, ...places, ...objects].filter(isGeneric).map(x => x.toLowerCase());
+  const details = [...clean(raw?.details, 6, true), ...generic].filter((x, i, a) => a.indexOf(x) === i).slice(0, 8);
   return {
     title: String(raw?.title || '').trim().slice(0, 70) || fallbackTitle(text),
     feel: FEEL[raw?.feel] ? raw.feel : 'calm', vivid, lucid: raw?.lucid === true,
-    motifs, motifLabels, motifNear, people: clean(raw?.people, 4, false), places: clean(raw?.places, 3, true), objects: clean(raw?.objects, 5, true),
+    motifs, motifLabels, motifNear, people: people.filter(x => !isGeneric(x)).slice(0, 4), places: places.filter(x => !isGeneric(x)).slice(0, 3), objects: objects.filter(x => !isGeneric(x)).slice(0, 5), details,
     tidied: acceptTidy(raw?.tidied, text) || undefined,
     themes: clean(raw?.themes, 6, true),
-    suggested: clean(raw?.noticed, 6, true).filter(x => !clean(raw?.objects, 5, true).includes(x) && !clean(raw?.places, 3, true).includes(x)),
+    suggested: clean(raw?.noticed, 6, true).filter(x => !objects.includes(x) && !places.includes(x) && !details.includes(x)),
   };
 }
 // a tidy is accepted only if it's a light touch: same words in the same order, give or take a few spelling fixes
