@@ -187,13 +187,18 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
 .s-night input { font: 400 12px var(--f-mono); letter-spacing: .04em; color: var(--text); background: transparent; border: 1px solid var(--edge); border-radius: 6px; padding: 4px 7px; color-scheme: dark; }
 .s-night input:focus { border-color: var(--edge-strong); outline: none; }
 #dreamText { display: block; width: 100%; box-sizing: border-box; min-height: 190px; max-height: 46vh; resize: vertical; margin: 0; padding: 14px 22px 10px; border: 0; background: transparent; color: #e4dfec;
-  font: 300 18px/1.6 var(--f-display); outline: none; }
+  font: 300 18px/1.6 var(--f-display); outline: none; padding-bottom: 58px; }
+.s-text { position: relative; }
 #dreamText::placeholder { color: var(--faint); font-style: italic; }
 #dreamText:disabled { color: var(--mist); }
 .s-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px 14px 22px; border-top: 1px solid var(--edge); }
 .s-note { font-size: 12px; color: var(--faint); line-height: 1.45; min-width: 0; }
 .s-note.err { color: #e9b38a; }
 .s-actions { display: flex; gap: 8px; flex: none; align-items: center; }
+.s-text .mic { position: absolute; right: 14px; bottom: 12px; width: 44px; height: 44px; background: var(--glass-strong); }
+.s-text .mic svg { width: 19px; height: 19px; }
+.mic[hidden], #dreamText:disabled + .mic { display: none; }
+.mic.invite { color: var(--gold); border-color: rgba(236, 215, 162, .55); }
 .mic { position: relative; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--edge); color: var(--mist); transition: color .25s, border-color .25s, background .25s; }
 .mic:hover { color: var(--text); border-color: var(--edge-strong); }
 .mic svg { width: 17px; height: 17px; }
@@ -338,7 +343,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.17 · 23 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.18 · 23 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -365,7 +370,10 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>
     </button>
   </div>
-  <textarea id="dreamText" maxlength="6000" placeholder="Write it down before it fades. Order and sense don't matter." aria-label="Your dream"></textarea>
+  <div class="s-text">
+    <textarea id="dreamText" maxlength="6000" placeholder="Write it down before it fades. Order and sense don't matter." aria-label="Your dream"></textarea>
+    <button class="mic" id="sMic" aria-label="Speak your dream" title="Speak your dream" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg></button>
+  </div>
   <div class="s-foot">
     <div class="s-note" id="sNote">Claude reads it, tags what recurs, and finds its place in your sky.</div>
     <div class="s-actions" id="sActions"><button class="btn primary" id="sSubmit" disabled>Chart it</button></div>
@@ -2039,10 +2047,9 @@ function startReading() {
   }, 2600);
 }
 function stopReading() { clearInterval(readTimer); readTimer = null; }
-const MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg>';
 function idleActions() {
-  const mic = SR && !micDead ? `<button class="mic" id="sMic" aria-label="Speak your dream" title="Speak your dream" aria-pressed="${micOn}">${MIC_SVG}</button>` : '';
-  sActions.innerHTML = mic + '<button class="btn primary" id="sSubmit">Chart it</button>';
+  sActions.innerHTML = '<button class="btn primary" id="sSubmit">Chart it</button>';
+  syncMic();
   $('#sSubmit').disabled = ta.value.trim().length < 3;
 }
 function resetSheet(note) {
@@ -2058,7 +2065,7 @@ function joinSpeech(base, add) {
   return base.trim() ? base.replace(/\s+$/, '') + ' ' + add : add;
 }
 function micUI() {
-  const b = $('#sMic'); if (b) b.setAttribute('aria-pressed', String(micOn));
+  syncMic();
   if (!busy) { sNote.className = 's-note'; sNote.textContent = micOn ? 'Listening. Tap the microphone again when you’re done.' : (aiOff ? NOTE_OFF : NOTE_DEFAULT); }
 }
 function micListen() {
@@ -2084,7 +2091,9 @@ function micListen() {
 }
 function micStart() { if (!SR || micDead || micOn || busy) return; micOn = true; micStarts = []; micUI(); micListen(); ta.focus(); }
 function micStop() { const was = micOn; micOn = false; if (rec) { try { rec.stop(); } catch (e) {} } if (was) micUI(); } // the last words still land before it ends
-ta.addEventListener('input', () => { if (micOn && !micWriting) micStop(); }); // typing takes over from the microphone
+function syncMic() { const b = $('#sMic'); if (!b) return; b.hidden = !SR || micDead; b.classList.toggle('invite', !micOn && !ta.value.trim()); b.setAttribute('aria-pressed', String(micOn)); }
+ta.addEventListener('input', () => { if (micOn && !micWriting) micStop(); syncMic(); }); // typing takes over from the microphone
+$('#sMic').addEventListener('click', () => { micOn ? micStop() : micStart(); });
 
 function openCapture() {
   if (capturing) return;
@@ -2114,7 +2123,6 @@ $('#btnRecord').addEventListener('click', openCapture);
 $('#btnRecordEmpty').addEventListener('click', openCapture);
 sActions.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.id === 'sMic') { micOn ? micStop() : micStart(); return; }
   if (b.id === 'sSubmit' || b.dataset.act === 'retry') { micStop(); submitDream(false); }
   else if (b.dataset.act === 'untagged') submitDream(true);
   else if (b.dataset.act === 'stop') ctl?.abort();
