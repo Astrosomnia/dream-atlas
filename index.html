@@ -345,7 +345,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.19 · 24 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.20 · 24 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -775,14 +775,19 @@ const NEB_TEX = [];
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
   rtScene.add(quad);
+  const RTS = [];
   for (let i = 0; i < 6; i++) {
-    const rt = new THREE.WebGLRenderTarget(512, 512, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, depthBuffer: false });
-    mat.uniforms.uSeed.value = SEED * 0.37 + i * 1.913;
-    renderer.setRenderTarget(rt); renderer.render(rtScene, rtCam);
-    NEB_TEX.push(rt.texture);
+    RTS.push(new THREE.WebGLRenderTarget(512, 512, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, depthBuffer: false }));
+    NEB_TEX.push(RTS[i].texture);
   }
-  renderer.setRenderTarget(null);
-  mat.dispose(); quad.geometry.dispose();
+  const bake = () => {
+    RTS.forEach((rt, i) => { mat.uniforms.uSeed.value = SEED * 0.37 + i * 1.913; renderer.setRenderTarget(rt); renderer.render(rtScene, rtCam); });
+    renderer.setRenderTarget(null);
+  };
+  bake();
+  // phones can drop the GPU's memory (switching apps, memory pressure); baked textures come back blank, so bake them again
+  renderer.domElement.addEventListener('webglcontextlost', e => e.preventDefault());
+  renderer.domElement.addEventListener('webglcontextrestored', () => setTimeout(bake, 0));
 }
 
 /* ---------- 2. Sky dome ---------- */
@@ -852,7 +857,7 @@ const nebulaMat = (tex, colA, colB, intensity, mode) => new THREE.ShaderMaterial
       vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
       vec3 wp = uCenter + (right * p.x + up * p.y) * uScale;
       float dist = distance(cameraPosition, uCenter);
-      vFade = smoothstep(uScale * .18, uScale * .75, dist);
+      vFade = smoothstep(min(uScale * .18, 22.), min(uScale * .75, 64.), dist); // only fade when you're truly inside it
       gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.); }`,
   fragmentShader: `precision highp float; uniform sampler2D uMap; uniform vec3 uColA, uColB; uniform float uIntensity, uDim, uMode, uFade; varying vec2 vUv; varying float vFade;
     float h(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
