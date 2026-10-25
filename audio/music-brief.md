@@ -1,6 +1,6 @@
 # Dream Atlas: ambient sound brief
 
-Paste this into a new chat and attach `ambience.js` (and `dream-atlas-ambience-preview.m4a` if you like).
+Paste this into a new chat and attach `ambience.js` (and `ambience-preview.m4a` if you like).
 
 ## What Dream Atlas is
 
@@ -8,31 +8,43 @@ A personal dream journal drawn as a living night sky. Each dream is a star: colo
 
 ## The goal
 
-A super-subtle ambient bed to round out the space: a music bed plus some atmosphere, with no sound effects for now. It should be comfortable for hours, never loop audibly, and stay quiet enough to sit under everything.
+A super-subtle ambient bed: present, but easy to forget. Something you could meditate to, or that helps you recall the dream you're writing down. "Not quite song": a soft harmonic bed, with far-off bells that sometimes sing a short, remembered melody, like a childhood memory of looking at a rainbow. Comfortable for hours, never loops audibly, no sound effects.
 
-## What exists so far: `ambience.js`
+## What exists: `ambience.js` (v8, 25 Oct 2026)
 
-Generative audio built with the browser's Web Audio API. No audio files, and nothing extra to download.
+Generative Web Audio. No audio files, nothing to download.
 
-- **Pad:** open, unresolved chords in D (Dmaj9, Bm11, Gmaj7#11, Asus2add11, Em9). A new chord comes in every 14 s and lasts 19 s, with a 6.5 s attack and an 8 s release, so they always overlap. Each note is two detuned oscillators (sine for the root, triangle above), panned slightly apart.
-- **Filter:** the pad runs through a low-pass at about 820 Hz that breathes ±320 Hz on a 32-second cycle.
-- **Drone:** a low D (MIDI 38) sine at very low level, with a slow volume swell.
-- **Air:** pink noise through a wandering band-pass (about 520 Hz ±300) that pans slowly. It reads as wind or space.
-- **Bell:** an occasional far-off bell, every 16 to 42 s, from a D-major pentatonic set. Three sine partials, strongly reverbed.
-- **Reverb:** a generated 7-second dark impulse response.
-- **Levels:** master level 0.6, which renders at about −28 dB RMS. It's dark and quiet; nearly no energy above 3 kHz.
-- **API:** `makeAmbience(ctx, { seed, level, out, offline })` returns `{ start(fade), stop(fade), master }`. In `offline` mode it schedules everything up front, so it can be rendered with an `OfflineAudioContext` to a WAV for listening.
+- **Pad:** open chords, each a bass root plus four upper voices. Every chord is re-voiced to sit as close as possible to the last one, so a change feels like a slow turn rather than a swap. Each note is a sine/triangle pair with only a touch of detune (lots of detune read as warble).
+- **Harmony:** weighted chord moves rather than random picks (e.g. Asus2 usually goes home to Dmaj9), and it avoids rocking straight back to the chord before last.
+  - Home key is **D** (Dmaj9, Bm11, Gmaj7#11, Asus2, Em9). Every 2–3 min it drifts for 4–7 chords to **shade** (B minor, darker) or **lift** (A major, a little brighter), then comes home.
+  - The drone fades out and back in on the new key's root.
+- **Timing:** chords last 12–17 s, sometimes a quicker 9.5–11.5 s turn. Long holds of 19 s and up were cut because they got warbly. Attack and overlap stretch to fit.
+- **Filter:** pad low-pass at about 820 Hz, breathing ±210 Hz on a 32 s cycle.
+- **Air:** pink noise through a wandering band-pass. Kept very low (0.018).
+- **Bells (the melody):** a far-off three-partial sine bell, set well back (mostly reverb, very little direct sound), like stars flickering on in the distance. They follow a small songbook in a loose form:
+  - single bells, and the two-note **sighs** (a note that leans, then lets go). Jarred likes these most: keep them common.
+  - the home motif F#–G–A→D ("the look up") and a variant that starts a sixth below;
+  - an answer that leans in from above and settles;
+  - "arc" (a wide arpeggio up, drifting down), "lullaby" (repeated notes), falling thirds, a small ornament, an open octave, and a ten-note "long line" with a breath in the middle;
+  - rests.
+  - Each slot in the form picks from a few options. Phrases shift up or down the scale to fit whatever chord they land on (a melodic sequence), so they always sit in the harmony and follow the key into minor or major. The last few notes of each phrase slow slightly.
+  - One cycle of the form takes several minutes. Phrases are spaced 8–15 s apart, with longer rests.
+- **Chimes:** a closer, brighter two-note chime still exists in the code but is **off** (`chimes: true` turns it on). The bells carry the melody now.
+- **Reverb:** a generated 7 s dark hall. It's built from a fixed seed (`roomSeed`, default 5) so the room sounds and sits the same on every load. An unseeded room varied up to 7 dB between loads. The reverb send is high-passed at 140 Hz so the bass stays dry and even.
+- **Levels:** master 0.6, about −27 to −28 dB RMS, peaks around −12 dB. Nothing above 3 kHz.
+- **API:** `makeAmbience(ctx, { seed, level, out, offline, roomSeed, chimes, log })` returns `{ start(fade), stop(fade), master }`. `offline` (seconds) schedules everything up front for rendering with an `OfflineAudioContext`. `log(kind, time, detail)` reports chords, phrases, notes and key changes, which helps line up feedback with timestamps.
+
+## What was tried and dropped
+
+- **Eno-style phrase loops** (v5): four soft-piano phrases on loops of unequal length (21, 27, 33, 39 s) drifting in and out of phase. Jarred preferred the v4 space without them.
+- **The first six-note phrases** were too stepwise ("do-re-mi", staircasey). The current songbook leans on leaps, leaning notes, repeated notes and rhythm instead.
 
 ## How previews are made
 
-Render 60–90 s with an OfflineAudioContext in headless Chromium (Playwright), save it as a WAV, check it numerically (clipping, clicks, spectral centroid, energy above 3 kHz, RMS per 10 s), then encode to m4a with ffmpeg. The assistant can't hear the result, so Jarred listens and describes what he hears; plain words like "too new-age", "colder", "more distant" or "warmer like tape" get translated into settings.
+Render 2–3 min with an `OfflineAudioContext` in headless Chromium (Playwright), save the PCM, and check it numerically (clipping, clicks, RMS per 15 s, spectral centroid, energy above 3 kHz). Then encode to m4a with ffmpeg. The assistant can't hear the result, so Jarred listens and describes what he hears by timestamp. Use the `log` hook to map timestamps to phrases.
 
 ## Planned in-app behaviour (not built yet)
 
 - A tiny waveform toggle in the toolbar: five thin bars that sit as flat dots when off and ripple slowly when on.
 - Off by default, since browsers need a tap before playing audio. It remembers the choice, keeps playing in ambient mode, and fades out when the tab is hidden.
-- Later, maybe: harmony or texture that responds to the sky, like the mix of feelings in your dreams, or ambient mode. Only if it stays subtle.
-
-## Where it's at
-
-The first preview hasn't had feedback yet. Start by listening to it, then iterate on tone, harmony, density and space. A real instrument (a few stretched piano or cello samples) is an option if pure synthesis tops out.
+- Later, maybe: harmony or texture that responds to the sky (the mix of feelings in your dreams), or to ambient mode. Only if it stays subtle.

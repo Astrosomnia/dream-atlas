@@ -87,7 +87,7 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 
 - **Jarred:** live with v0.24 on real dreams. Run Re-analyse, judge the moments and any regions that form, and check the arrival ceremony's timing on a phone (it hasn't been seen in motion).
 - **Jarred:** make sure the API keys pasted in chat early on are revoked. Only the Cloudflare secret should exist.
-- **Music:** in its own thread, using `audio/music-brief.md` and `ambience.js` (also in the project files).
+- **Music:** `audio/ambience.js` v8 is ready to wire into the site (waveform toggle, off by default, fade when the tab is hidden). `audio/music-brief.md` describes it and what was tried.
 - **Roadmap doc:** refresh it. It predates the Astronomer, backup, leafing and live regions shipping.
 - **Claude Code folder:** its prototype copy is v0.10. Replace it with the current build before any port.
 - **Data:** clean up the old details and themes once everything has been re-analysed.
@@ -95,7 +95,7 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 
 ## Later and roadmap
 
-- Music and ambience, in its own thread. There's a brief plus `ambience.js`, a generative Web Audio pad, drone, air and bell. The toggle will be a waveform icon.
+- Music and ambience: `audio/ambience.js` v8 is a generative Web Audio pad that wanders between keys, plus a drone, faint air, and far-off bells that sing short phrases from a small songbook. Not wired into the site yet. The toggle will be a waveform icon.
 - A readable journal export.
 - Remove the demo dreams once real dreams are in. That also fixes demo stars gliding on reload.
 - Port to Claude Code: TypeScript, Vite, three, IndexedDB, plus the screenshot-verification loop.
