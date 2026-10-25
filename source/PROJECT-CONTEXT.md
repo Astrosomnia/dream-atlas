@@ -83,10 +83,15 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 - Backup export and import, in How to Read.
 - Nebulae repaint after phone GPU resets, and the sky holds still under the phone keyboard.
 
-## Next up (ideas, not agreed)
+## Outstanding (as of 25 Oct)
 
-- Watch real use of moments and emerging regions, then tune the prompts. The region-call threshold of three may need tuning.
-- Hide or drop old details and themes data entirely once everything has been re-analysed.
+- **Jarred:** live with v0.24 on real dreams. Run Re-analyse, judge the moments and any regions that form, and check the arrival ceremony's timing on a phone (it hasn't been seen in motion).
+- **Jarred:** make sure the API keys pasted in chat early on are revoked. Only the Cloudflare secret should exist.
+- **Music:** in its own thread, using `audio/music-brief.md` and `ambience.js` (also in the project files).
+- **Roadmap doc:** refresh it. It predates the Astronomer, backup, leafing and live regions shipping.
+- **Claude Code folder:** its prototype copy is v0.10. Replace it with the current build before any port.
+- **Data:** clean up the old details and themes once everything has been re-analysed.
+- **Ideas:** tune the moment prompts and the region threshold (3) after real use; small mic visibility tweaks.
 
 ## Later and roadmap
 
