@@ -1,6 +1,6 @@
 # Dream Atlas: project context
 
-Last updated 25 Oct 2026 (version 0.23).
+Last updated 25 Oct 2026 (version 0.24).
 
 ## What it is
 
@@ -23,12 +23,12 @@ The guiding principles:
 - **Claude version:** the artifact at claude.ai/artifact/S289baJBxSCzvqjqb2ywyW. Capabilities: sample, db, user, downloads. Storage is private per user, with localStorage as a fallback.
 - **Public site:** astrosomnia.github.io/dream-atlas (repo Astrosomnia/dream-atlas, `index.html` plus `og.jpg`). Dreams stay in the visitor's browser. No login.
 - **Relay:** a Cloudflare Worker at dream-atlas.jarredpowell88.workers.dev (`worker.js`).
-  - It tags dreams with `claude-haiku-5-5` and answers Astronomer questions with `claude-sonnet-5-5`.
+  - Modes: single tag and `tagBatch` (Re-analyse) use `claude-haiku-5-5`; `region` (should a shared moment become a nebula?) and `ask` (the Astronomer) use `claude-sonnet-5-5`.
   - It builds prompts server-side, only accepts requests from the GitHub Pages origin, and keeps the API key only as the Cloudflare secret `ANTHROPIC_API_KEY`.
-  - Jarred pastes updates in by hand. The latest version (Astronomer ask mode, the new tagging rules, max_tokens 4000 with a retry) needed pasting as of 24 Oct.
+  - Jarred pastes updates in by hand. The v0.24 worker (moments, batch and region modes) needed pasting as of 25 Oct.
 - **Roadmap doc:** claude.ai/artifact/Mh45DGRcRymq1hs2zrz54Q. Five phases, 16 features.
 - **Claude Code handoff folder:** CLAUDE.md, KICKOFF.md, brief v1.2, the prototype, and demo data. The port to a proper codebase is still to come.
-- **Labs:** standalone test pages for single components, kept in the chat and never pushed live. The first is `region-title-lab.html`.
+- **Labs:** standalone test pages for single components, in the repo's `labs/` folder and served at astrosomnia.github.io/dream-atlas/labs/<name>.html (unlinked). The first is `region-title-lab.html`.
 
 ## Source of truth: the GitHub repo
 
@@ -44,19 +44,21 @@ After each batch, commit both builds and the worker together, and update this do
 
 ## The two builds
 
-The Claude version and `index.html` are the same code with a few differences. The Claude version uses claude.ai's `sample` and `db`. The public site uses `useCap()` returning null, `callTagger` and `askClaude` posting to the worker, and OG meta tags. `tagDream()` and `askClaude()` hide the difference from the rest of the code. Every change is applied to both. The version string sits in the How to Read panel ("Version 0.xx · date").
+The Claude version and `index.html` are the same code with a few differences. The Claude version uses claude.ai's `sample` and `db`. The public site uses `useCap()` returning null, posts to the worker, and has OG meta tags. `tagDream()`, `tagBatch()`, `regionCall()` and `askClaude()` hide the difference from the rest of the code. The prompt builders (`tagRules`, `tagPrompt`, `batchPrompt`, `regionPrompt`) are identical in the page and the worker. Every change is applied to both. The version string sits in the How to Read panel ("Version 0.xx · date").
 
 ## Data model (one dream)
 
 - **Core:** id, date (the night of), createdAt, text (always the original), tidied (optional spelling-only copy).
 - **Reading:** title, feel, vivid (1–5), lucid.
-- **Tags:** motifs (the first is the home and decides placement), motifLabels, motifNear, people, places, objects, details, themes, suggested.
-- **Provenance:** tagger (claude / claude+you / you / none), editedAt, analysedAt.
+- **Tags:** motifs (the first is the home and decides placement), motifLabels, motifNear, people, places, objects, moments, suggested plus suggestedKinds. Older dreams may still carry details and themes, which are only used by search.
+- **Provenance:** tagger (claude / claude+you / you / none), editedAt, analysedAt, homeByHand, claimedBy (a new region claimed it), homeLocked (moved back after a claim: never moves again).
 
 The rules that govern placement and links:
 - Only motifs decide where a star sits.
-- People, places and things create the visible connections.
-- Anonymous people and everyday scenery (guy, someone, hill, trees…) never create links.
+- People, places, things and moments create the visible connections, matched on the word whatever its type (a "flying" motif links to a "flying" moment).
+- Each word lives in one place per dream.
+- Anonymous people and everyday scenery (guy, someone, a child, hill, trees…) never create links.
+- A nebula forms whenever a motif has 2+ dreams with at least one homed there.
 
 ## Feelings (colour)
 
@@ -64,52 +66,27 @@ Wonder `#74d7cf` · Joy `#f3e08f` · Longing `#df9fb2` · Sadness `#7f9fe0` · C
 
 The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary". Recurring dream mechanics, like legs that won't run, belong in motifs rather than the feeling.
 
-## What's built (v0.23)
+## What's built (v0.24)
 
-- Capture: text plus voice dictation, which merges Android's cumulative results. The mic sits inside the text box, gold while it's empty.
+- Capture: text plus voice dictation, which merges Android's cumulative results. The mic sits inside the text box, gold while it's empty. New dreams default to last night.
 - Claude tagging with a supernova arrival. The spelling tidy is a setting, with the original always kept.
+- **Moments:** short canonical tags for events and states (crying, kissing, dying). Suggestions arrive with their type. Sharper motif rules with a list of common dream motifs.
 - Tag editor with a home motif, and gliding re-placement.
-- Smart search: synonyms, categories, months, years, lucid, feelings, stemming.
-- Feeling filter: tap the feeling under a dream's title, or a swatch.
-- Search capsule, bottom left, cleared with its ×.
-- Leafing through dreams: swipe on a phone, arrows and arrow keys on desktop. It moves chronologically within whatever is lit.
-- **The Astronomer, in the search field ("Search or ask").** Questions get a "✦ Ask the Astronomer ↵" hint. The answer shows in the panel and lights up the cited dreams, and you can leaf through just those. Closing it returns to the full sky.
-- Re-analyse card and backup export and import, in How to Read.
+- Smart search: synonyms (including kissing and making out, crying, fighting, nakedness), categories, months, years, lucid, feelings, stemming.
+- Feeling filter (tap a feeling or a swatch) and the search capsule, bottom left, cleared with its ×.
+- Leafing through dreams: swipe on a phone, arrows and arrow keys on desktop. It moves chronologically within whatever is lit; in a reveal it's grouped by thread.
+- **The Astronomer** in the search field ("Search or ask"): the answer appears in the panel, the cited dreams light up, and you can leaf through just those. Closing it returns to the full sky.
+- **Emerging regions:** when a moment is shared by three dreams, a region call decides whether it becomes a nebula and which dreams move there.
+- **Region arrival ceremony,** whenever any new nebula forms: the nebula flares and cools, the stars glide together, and the name writes in place as glowing, wide-spaced mono caps before drawing together into a normal label. It's non-cartographic, at the slow 0.5× pace, staggered so each title starts halfway through the one before. Any tap skips it, and the camera only moves if the region is off-screen.
+- **Re-analyse:** batches of six dreams per call, offered only on evidence (or once for dreams read before moments existed), as a slim capsule: "✦ Your sky has grown. Seek connections anew? [Re-analyse]", then "Weaving new threads…". No Undo.
+- **The "new threads" reveal:** a gold numeral plus *new threads* header at the top. Gained tags show in gold until it's cleared, leafing is grouped by thread, and two taps on the sky clear it.
+- Backup export and import, in How to Read.
 - Nebulae repaint after phone GPU resets, and the sky holds still under the phone keyboard.
 
-## Agreed next build (not started)
+## Next up (ideas, not agreed)
 
-1. **Moments replace details, themes and noticed.**
-   - Short canonical lowercase tags for significant events and states: crying, dying, drowning, kissing, nakedness.
-   - They link dreams but don't place stars. Claude reuses the existing list.
-   - Each word appears in exactly one place per dream, and connections match on the word whatever its type.
-   - Suggestions arrive with their type (person, place, thing or moment), not always "thing".
-2. **Sharper motif rules.**
-   - Recurring situations at the level likely to repeat, preferring situations over settings. One-off images aren't motifs.
-   - A list of common dream motifs to prefer when they fit: falling, flying, being chased, death and dying, drowning, nakedness in public, teeth, lost, late, exams, water, houses, vehicles out of control, people who've died.
-   - Add child, baby and kid to the anonymous-people list.
-3. **Live nebulae.**
-   - When a moment reaches three dreams, a small Claude call decides on a new region, its name and its members.
-   - The arrival happens every time a nebula forms, however it forms. It lasts about three seconds and any tap skips it:
-     - the nebula flares bright, like a mini supernova, then cools;
-     - the stars glide together;
-     - the label writes in place as large, wide-spaced, glowing mono caps, then draws together into a normal label;
-     - the camera eases out only if the nebula is off-screen.
-   - Still to decide, in the lab: the cartographic hairline rules on or off, and queued versus simultaneous arrivals.
-   - Related regions sit together naturally (drowning beside water).
-4. **Hand-set homes.** Re-analysing existing regions never moves them. A newly formed region can claim one. If Jarred moves it back, that sticks for good.
-5. **Re-analyse.**
-   - Batches of six to eight dreams per call (from about a minute to about 15 seconds).
-   - Offered only on evidence: tags added since the last run that older dreams mention in their text without being tagged.
-   - Uses the slim capsule (design B) with a stroked button. The copy is "Your sky has grown. Seek connections anew?", with "Weaving new threads…" while it runs.
-   - No Undo anywhere.
-6. **The "new threads" reveal**, after Re-analyse or a new region.
-   - A header at the top: a large gold numeral with *new threads* centred against it, smaller than the first mock-up, with no box and no note.
-   - The changed dreams are lit, and the tags they gained are gold until the reveal is cleared.
-   - Leafing is grouped by shared thread, larger groups first and chronological within each group. That's the only exception to date order.
-   - The first tap on the sky closes the panel; the second clears the reveal.
-7. **Search:** wider synonyms ("kissing" finds "making out").
-8. **Housekeeping:** one worker paste for all of it, and update the brief's "quiet record and undo" line to match "no undo".
+- Watch real use of moments and emerging regions, then tune the prompts. The region-call threshold of three may need tuning.
+- Hide or drop old details and themes data entirely once everything has been re-analysed.
 
 ## Later and roadmap
 
