@@ -147,6 +147,47 @@ body.panel-open .bottom { right: 416px; }
 .link .dt { font-family: var(--f-mono); font-size: 10px; color: var(--faint); letter-spacing: .06em; margin-left: 8px; font-style: normal; }
 .details { margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: var(--mist); }
 .details .lbl { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 10px; }
+.meta .feel { font: inherit; color: inherit; padding: 0; cursor: pointer; transition: color .2s; }
+.meta .feel:hover { color: var(--text); }
+.sw { cursor: pointer; }
+.sw:hover { color: var(--text); }
+#qchip .qdot { width: 7px; height: 7px; border-radius: 50%; margin-left: 12px; flex: none; }
+#qchip .qdot + .qt { padding-left: 7px; font-style: normal; font-family: var(--f-ui); font-size: 12.5px; }
+.p-leaf { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--edge); }
+.p-leaf[hidden] { display: none; }
+.p-leaf button { width: 34px; height: 30px; border-radius: 15px; display: grid; place-items: center; color: var(--mist); border: 1px solid var(--edge); transition: color .2s, border-color .2s, opacity .2s; }
+.p-leaf button:hover:not(:disabled) { color: var(--text); border-color: var(--edge-strong); }
+.p-leaf button:disabled { opacity: .3; cursor: default; }
+.p-leaf button svg { width: 14px; height: 14px; }
+.p-leaf span { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .08em; color: var(--faint); min-width: 64px; text-align: center; }
+.p-body.leaf-in-l { animation: leafL .45s var(--ease); } .p-body.leaf-in-r { animation: leafR .45s var(--ease); }
+@keyframes leafL { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes leafR { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+.back-astro { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 10px; font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); opacity: .85; }
+.back-astro:hover { opacity: 1; }
+.astro-q { font-family: var(--f-display); font-style: italic; font-size: 22px; line-height: 1.35; color: var(--text); margin: 6px 0 18px; }
+.astro-a { font-family: var(--f-display); font-size: 17px; line-height: 1.6; color: #ddd8e6; margin: 0; }
+.astro-wait { margin: 4px 0 0; }
+#askHint { position: absolute; left: 0; right: 0; top: calc(100% + 6px); display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 17px; background: var(--glass-strong); border: 1px solid rgba(236, 215, 162, .4); color: var(--gold); font-size: 12.5px; white-space: nowrap; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); animation: qchipIn .35s var(--ease); }
+#askHint[hidden] { display: none; }
+#askHint kbd { margin-left: auto; font: 10px var(--f-mono); color: var(--faint); }
+.search { position: relative; }
+#recal { position: fixed; z-index: 16; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); width: 300px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 16px 18px 16px;
+  background: var(--glass-strong); border: 1px solid var(--edge); border-radius: 14px; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); animation: recalIn .7s var(--ease); }
+#recal[hidden] { display: none; }
+#recal p { margin: 0 26px 12px 0; font-family: var(--f-display); font-style: italic; font-size: 17px; line-height: 1.4; color: var(--text); }
+#recal .r-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; color: var(--faint); }
+#recal .r-x:hover { color: var(--text); }
+#recal .r-x svg { width: 11px; height: 11px; }
+#recal .r-row { display: flex; align-items: center; gap: 12px; }
+#recal .r-note { font-size: 12px; color: var(--mist); line-height: 1.4; }
+#recal .btn { height: 34px; padding: 0 16px; font-size: 13px; }
+@keyframes recalIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+body.panel-open #recal, body.capturing #recal, body.ambient #recal { display: none; }
+.bk-row { display: flex; gap: 6px; margin-top: 4px; }
+.bk-row button { flex: 1; height: 30px; border-radius: 8px; border: 1px solid var(--edge); color: var(--mist); font-size: 12px; }
+.bk-row button:hover { color: var(--text); border-color: var(--edge-strong); }
+.bk-note { margin: 8px 0 0; font-size: 11.5px; color: var(--faint); line-height: 1.45; }
 .note { margin-top: 26px; font-size: 11.5px; color: var(--faint); line-height: 1.5; }
 .year { font-family: var(--f-mono); font-size: 10px; letter-spacing: .14em; color: var(--faint); margin: 22px 0 6px; }
 .year:first-child { margin-top: 8px; }
@@ -309,7 +350,8 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   <div class="tools">
     <label class="search" for="q">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-      <input id="q" type="search" placeholder="Search dreams" autocomplete="off" spellcheck="false" aria-label="Search dreams">
+      <input id="q" type="search" placeholder="Search or ask" autocomplete="off" spellcheck="false" aria-label="Search or ask your dreams" enterkeyhint="search">
+      <button id="askHint" type="button" hidden>✦ Ask the Astronomer<kbd>↵</kbd></button>
     </label>
     <button class="icon-btn search-toggle" id="btnSearch" aria-label="Search" title="Search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
@@ -339,13 +381,17 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   <hr>
   <h3>Writing</h3>
   <label class="tog" for="tidyToggle"><input type="checkbox" id="tidyToggle" checked> Tidy spelling and punctuation</label>
+  <h3 style="margin-top:16px">Your dreams</h3>
+  <div class="bk-row"><button id="bkExport">Export backup</button><button id="bkImport">Import backup</button></div>
+  <input type="file" id="bkFile" accept=".json,application/json" hidden>
+  <p class="bk-note" id="bkNote"></p>
   <h3 style="margin-top:16px">Sky shows</h3>
   <div class="seg" id="sources"><button data-demo="1">Demo and yours</button><button data-demo="0">Only yours</button></div>
   <div id="sizeBlock">
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.21 · 24 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.22 · 24 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -382,6 +428,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   </div>
 </section>
 <div id="toast" role="status"></div>
+<div id="recal" hidden role="dialog" aria-label="Re-analyse your sky"><button class="r-x" id="recalX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button><p id="recalMsg">Your sky has grown. Seek connections anew?</p><div class="r-row" id="recalRow"><button class="btn primary" id="recalGo">Re-analyse</button></div></div>
 
 <aside id="panel" class="ui" aria-label="Dream details">
   <div class="p-head"><span class="eyebrow" id="pEyebrow"></span>
@@ -390,6 +437,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     </button>
   </div>
   <div class="p-body" id="pBody"></div>
+  <div class="p-leaf" id="pLeaf" hidden><button data-leaf="-1" aria-label="Older dream" title="Older (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg></button><span id="pLeafPos"></span><button data-leaf="1" aria-label="Newer dream" title="Newer (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></button></div>
 </aside>
 
 <div id="tip"><div class="t"></div><div class="d"></div></div>
@@ -1347,12 +1395,15 @@ const body = document.body;
 function keyOpen() { return body.classList.contains('key-open'); }
 function setKey(open) { body.classList.toggle('key-open', open); $('#btnKey').setAttribute('aria-pressed', String(open)); }
 function openPanel() { setKey(false); body.classList.add('panel-open'); }
-function closePanel() { body.classList.remove('panel-open'); ed = null; }
+function closePanel() {
+  body.classList.remove('panel-open'); ed = null;
+  if (filterKey === 'astro') { astro = null; filterKey = null; filterSet = null; setStates(); syncChips(); syncSearchChip(); }
+}
 
 function dotsFor(v) { return '<span class="vivid" title="Vividness ' + v + ' of 5">' + Array.from({ length: 5 }, (_, k) => '<i class="' + (k < v ? 'on' : '') + '"></i>').join('') + '</span>'; }
 let ed = null; // the tag editor's working copy, when open
 function showDream(d) {
-  ed = null;
+  ed = null; panelMode = 'dream';
   $('#pEyebrow').textContent = d.catalog + ' · Night of ' + fmtDate(d.t);
   const feel = FEEL[d.feel];
   const tagChips = d.tags.map(k => { const t = model.tags.get(k); return `<button class="tag" data-tag="${esc(k)}"><span class="ty">${TYPE_LABEL[t.type]}</span>${esc(t.label)}</button>`; }).join('');
@@ -1364,17 +1415,19 @@ function showDream(d) {
   }).join('') : '<p class="note" style="margin:0">Nothing shared with other dreams yet. Connections appear as the archive grows.</p>';
   $('#pBody').innerHTML = `
     <h2>${esc(d.title)}</h2>
-    <div class="meta"><span class="feel"><span class="dot" style="background:${feel.hex};color:${feel.hex}"></span>${feel.label}</span>${dotsFor(d.vivid)}${d.lucid ? '<span class="lucid">Lucid</span>' : ''}${d.source === 'you' ? '<span class="yours">Yours</span>' : ''}</div>
+    ${filterKey === 'astro' && astro ? '<button class="back-astro" data-astro-back="1">‹ The Astronomer</button>' : ''}
+    <div class="meta"><button class="feel" data-feelf="${d.feel}" title="Show every ${feel.label} dream"><span class="dot" style="background:${feel.hex};color:${feel.hex}"></span>${feel.label}</button>${dotsFor(d.vivid)}${d.lucid ? '<span class="lucid">Lucid</span>' : ''}${d.source === 'you' ? '<span class="yours">Yours</span>' : ''}</div>
     <div class="sec"><h3>Your account</h3><p class="account">${esc(shownText(d))}</p></div>
     <div class="sec"><h3>Recurring elements</h3>${tagChips ? `<div class="tags">${tagChips}</div>` : '<p class="note" style="margin:0">No elements tagged yet.</p>'}${d.quiet.length ? `<p class="details"><span class="lbl">Details</span>${d.quiet.map(esc).join(' · ')}</p>` : ''}${d.source === 'you' ? noticedHTML(d) : ''}</div>
     <div class="sec"><h3>Connected dreams · ${rels.length}</h3><div class="links">${links}</div></div>
     <p class="note">${d.source === 'you' ? (d.tagger === 'claude' ? 'Claude tagged this from your words only. ' : 'This dream was added without AI tagging. ') : ''}Connections come only from elements written in each account. Tap one to see every dream that shares it.</p>
     ${d.source === 'you' ? `<div class="p-actions" id="pActions">${ACTIONS_IDLE}</div>` : ''}`;
   $('#pBody').scrollTop = 0;
-  openPanel();
+  openPanel(); syncLeaf();
 }
 function showList() {
   clearSelection(true);
+  $('#pLeaf').hidden = true;
   $('#pEyebrow').textContent = model.dreams.length + ' dreams · newest first';
   const byYear = {};
   [...model.dreams].sort((a, b) => b.t - a.t).forEach(d => { const y = new Date(d.t).getFullYear(); (byYear[y] = byYear[y] || []).push(d); });
@@ -1384,10 +1437,45 @@ function showList() {
   openPanel(); panelMode = 'list';
 }
 let panelMode = null;
+/* ---------- leafing through dreams, in date order, within whatever the sky is lighting ---------- */
+function leafList() {
+  const idx = filterSet && filterSet.size ? [...filterSet] : model.dreams.map(d => d.i);
+  return idx.sort((a, b) => (model.dreams[a].t - model.dreams[b].t) || ((model.dreams[a].createdAt || 0) - (model.dreams[b].createdAt || 0)) || a - b);
+}
+function syncLeaf() {
+  const bar = $('#pLeaf');
+  if (panelMode !== 'dream' || ed || selected < 0) { bar.hidden = true; return; }
+  const L = leafList(), k = L.indexOf(selected);
+  if (L.length < 2 || k < 0) { bar.hidden = true; return; }
+  bar.hidden = false;
+  $('#pLeafPos').textContent = (k + 1) + ' of ' + L.length;
+  bar.querySelector('[data-leaf="-1"]').disabled = k === 0;
+  bar.querySelector('[data-leaf="1"]').disabled = k === L.length - 1;
+}
+function leaf(dir) {
+  if (panelMode !== 'dream' || ed || selected < 0) return;
+  const L = leafList(), k = L.indexOf(selected), j = L[k + dir];
+  if (k < 0 || j === undefined) return;
+  selectDream(j, { keepSaved: true });
+  const pb = $('#pBody'); pb.classList.remove('leaf-in-l', 'leaf-in-r'); void pb.offsetWidth; pb.classList.add(dir > 0 ? 'leaf-in-l' : 'leaf-in-r');
+}
+$('#pLeaf').addEventListener('click', e => { const b = e.target.closest('[data-leaf]'); if (b && !b.disabled) leaf(+b.dataset.leaf); });
+{
+  let sw = null;
+  const pb = () => $('#pBody');
+  $('#panel').addEventListener('touchstart', e => { if (e.touches.length === 1) sw = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: performance.now() }; }, { passive: true });
+  $('#panel').addEventListener('touchend', e => {
+    if (!sw) return; const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y, dt = performance.now() - sw.t; sw = null;
+    if (dt < 700 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.8) leaf(dx < 0 ? 1 : -1); // swipe left = the next, newer dream
+  }, { passive: true });
+}
 $('#pBody').addEventListener('click', e => {
   if (ed) { editorClick(e); return; }
   const quick = e.target.closest('[data-quick]'); if (quick && selected >= 0) { quickTag(model.dreams[selected].id, quick.dataset.quick); return; }
-  const link = e.target.closest('.link'); if (link) { panelMode = 'dream'; selectDream(+link.dataset.i, { keepSaved: selected >= 0 || panelMode === 'list' }); return; }
+  const ff = e.target.closest('[data-feelf]'); if (ff) { filterByFeel(ff.dataset.feelf); return; }
+  if (e.target.closest('[data-astro-back]')) { showAstro(); return; }
+  if (e.target.closest('[data-astro-retry]')) { if (astro) askAstronomer(astro.q); return; }
+  const link = e.target.closest('.link'); if (link) { const keep = selected >= 0 || panelMode === 'list' || panelMode === 'astro'; panelMode = 'dream'; selectDream(+link.dataset.i, { keepSaved: keep }); return; }
   const tag = e.target.closest('.tag[data-tag]'); if (tag) { const t = model.tags.get(tag.dataset.tag); closePanel(); setFilter(t.key, new Set(t.members)); return; }
   const act = e.target.closest('[data-act]'); if (!act || selected < 0) return;
   const box = $('#pActions');
@@ -1401,6 +1489,13 @@ $('#pClose').addEventListener('click', () => { closePanel(); clearSelection(true
 /* ============================================================
    Editing your dream's tags
    ============================================================ */
+function filterByFeel(k) {
+  const set = new Set(model.dreams.filter(d => d.feel === k).map(d => d.i));
+  if (!set.size) return;
+  setKey(false); closePanel(); panelMode = null;
+  setFilter('feel:' + k, set, true);
+}
+$('#swatches').addEventListener('click', e => { const sw = e.target.closest('[data-feelf]'); if (sw) filterByFeel(sw.dataset.feelf); });
 const ACTIONS_IDLE = '<button class="btn ghost" data-act="edit">Edit tags</button><button class="btn ghost" data-act="remove">Remove from sky</button>';
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>';
 const KIND_LABEL = { people: 'People', places: 'Places', objects: 'Things', details: 'Details' };
@@ -1417,6 +1512,7 @@ function noticedHTML(d) {
 }
 function openEditor(id) {
   const r = mineRec(id); if (!r) return;
+  $('#pLeaf').hidden = true;
   const d = JSON.parse(JSON.stringify(r));
   ['motifs', 'people', 'places', 'objects', 'details', 'suggested'].forEach(k => d[k] = Array.isArray(d[k]) ? d[k] : []);
   d.motifLabels = d.motifLabels || {};
@@ -1574,9 +1670,13 @@ function buildMotifUI() {
   box.innerHTML = items ? `<span class="lbl">Recurring</span>${items}` : `<span class="lbl">No recurring motifs yet</span>`;
 }
 function syncSearchChip() {
-  const c = $('#qchip'), s = $('#q').value.trim();
-  if (filterKey !== 'search' || !s) { c.hidden = true; return; }
-  c.querySelector('.qt').textContent = '\u201c' + s + '\u201d';
+  const c = $('#qchip'), s = $('#q').value.trim(), qt = c.querySelector('.qt');
+  c.querySelector('.qdot')?.remove();
+  if (filterKey === 'search' && s) qt.textContent = '\u201c' + s + '\u201d';
+  else if (filterKey && filterKey.startsWith('feel:') && FEEL[filterKey.slice(5)]) {
+    const f = FEEL[filterKey.slice(5)]; qt.textContent = f.label;
+    const dot = document.createElement('span'); dot.className = 'qdot'; dot.style.background = f.hex; qt.before(dot);
+  } else { c.hidden = true; return; }
   c.querySelector('.n').textContent = filterSet ? filterSet.size : 0;
   c.hidden = false;
 }
@@ -1628,7 +1728,7 @@ function updateLabels() {
 
 // key: tiny live renderings of the encodings
 function drawKey() {
-  $('#swatches').innerHTML = Object.values(FEEL).map(f => `<span class="sw"><span class="dot" style="background:${f.hex};color:${f.hex}"></span>${f.label}</span>`).join('');
+  $('#swatches').innerHTML = Object.entries(FEEL).map(([k, f]) => `<span class="sw" role="button" tabindex="0" data-feelf="${k}" title="Show every ${f.label} dream"><span class="dot" style="background:${f.hex};color:${f.hex}"></span>${f.label}</span>`).join('');
   const star = (ctx, x, y, s, hex, k, lucid) => {
     const g = ctx.createRadialGradient(x, y, 0, x, y, s); g.addColorStop(0, `rgba(255,255,255,${k})`); g.addColorStop(0.12, hex); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s, 0, 7); ctx.fill();
@@ -1742,7 +1842,8 @@ canvas.addEventListener('pointerup', e => {
   else if (selected >= 0) { closePanel(); clearSelection(true); panelMode = null; }
   else if (panelMode === 'list' && body.classList.contains('panel-open')) { closePanel(); panelMode = null; }
   else if (body.classList.contains('search-open') && innerWidth <= 760) { body.classList.remove('search-open'); q.blur(); }
-  else if (filterKey && filterKey !== 'search') { setFilter(null, null, false); }
+  else if (panelMode === 'astro' && body.classList.contains('panel-open')) { closePanel(); panelMode = null; }
+  else if (filterKey && filterKey !== 'search' && filterKey !== 'astro') { setFilter(null, null, false); }
 });
 canvas.addEventListener('pointermove', e => {
   noteInput();
@@ -1766,7 +1867,7 @@ $('#btnReset').addEventListener('click', () => { closePanel(); clearSelection(fa
 $('#btnList').addEventListener('click', () => { if (panelMode === 'list' && body.classList.contains('panel-open')) { closePanel(); panelMode = null; return; } showList(); });
 $('#btnKey').addEventListener('click', () => {
   if (keyOpen()) { setKey(false); return; }
-  if (body.classList.contains('panel-open') && (panelMode === 'list' || panelMode === 'dream')) { closePanel(); if (selected >= 0) clearSelection(true); panelMode = null; }
+  if (body.classList.contains('panel-open') && (panelMode === 'list' || panelMode === 'dream' || panelMode === 'astro')) { closePanel(); if (selected >= 0) clearSelection(true); panelMode = null; }
   setKey(true);
 });
 $('#btnSearch').addEventListener('click', () => { body.classList.toggle('search-open'); if (body.classList.contains('search-open')) $('#q').focus(); });
@@ -1844,12 +1945,22 @@ function smartSearch(query) {
   });
   return all.size ? all : any; // every word if possible, otherwise any of them
 }
+const ASK_START = /^(what|what's|whats|why|when|where|who|which|how|do|does|did|have|has|had|am|is|are|was|were|can|could|should|would|will|tell me|show me|is there|are there)\b/i;
+const isQuestion = s => { s = s.trim(); return s.length > 6 && (/\?$/.test(s) || (ASK_START.test(s) && s.split(/\s+/).length >= 3)); };
+function syncAskHint() { $('#askHint').hidden = !(isQuestion(q.value) && document.activeElement === q); }
+q.addEventListener('focus', syncAskHint);
+q.addEventListener('blur', () => setTimeout(syncAskHint, 150));
+$('#askHint').addEventListener('pointerdown', e => e.preventDefault()); // keep focus so the tap lands
+$('#askHint').addEventListener('click', () => { if (isQuestion(q.value)) askAstronomer(q.value.trim()); });
 q.addEventListener('input', () => {
+  syncAskHint();
   const s = q.value.trim();
+  if (isQuestion(s)) { if (filterKey === 'search') setFilter(null, null, false); return; } // a question waits for Enter
   if (!s) { setFilter(null, null, false); return; }
   closePanel(); setFilter('search', smartSearch(s), false);
 });
 q.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && isQuestion(q.value)) { e.preventDefault(); askAstronomer(q.value.trim()); return; }
   if (e.key === 'Enter' && filterSet && filterSet.size) { const first = [...filterSet][0]; q.blur(); body.classList.remove('search-open'); if (filterSet.size === 1) { panelMode = 'dream'; selectDream(first); } else setFilter('search', filterSet, true); }
   if (e.key === 'Escape') { q.value = ''; setFilter(null, null, false); q.blur(); body.classList.remove('search-open'); }
 });
@@ -1869,6 +1980,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'r' || e.key === 'R') $('#btnReset').click();
   else if (e.key === 'l' || e.key === 'L') $('#btnList').click();
   else if (e.key === '/') { e.preventDefault(); body.classList.add('search-open'); q.focus(); }
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && panelMode === 'dream' && body.classList.contains('panel-open')) { e.preventDefault(); leaf(e.key === 'ArrowRight' ? 1 : -1); }
 });
 window.addEventListener('keydown', e => { if (ambient && !['a', 'A'].includes(e.key)) exitAmbient(); }, true);
 
@@ -1919,6 +2031,229 @@ const store = (() => {
     },
   };
 })();
+/* ============================================================
+   The Astronomer: ask the archive a question
+   ============================================================ */
+let astro = null, astroCtl = null;
+function archiveForAsk() {
+  return model.dreams.map(d => ({
+    id: d.id, date: d.date, title: d.title, feel: FEEL[d.feel]?.label || d.feel, vivid: d.vivid, lucid: !!d.lucid,
+    motifs: d.motifs.map(m => motifName(m, d)), people: d.people, places: d.places, objects: d.objects, details: d.details || [],
+    text: String(shownText(d) || '').slice(0, 1500),
+  }));
+}
+function buildAskPrompt(question, archive) {
+  const lines = archive.map(d => `[${d.id}] ${d.date} · "${d.title}" · feeling: ${d.feel} · vividness ${d.vivid}/5${d.lucid ? ' · lucid' : ''}
+motifs: ${d.motifs.join(', ') || 'none'} | people: ${d.people.join(', ') || 'none'} | places: ${d.places.join(', ') || 'none'} | things: ${d.objects.join(', ') || 'none'} | details: ${d.details.join(', ') || 'none'}
+${d.text}`).join('\n\n');
+  return `You are the Astronomer in Dream Atlas, a private dream journal drawn as a night sky. Answer the dreamer's question using only their dream records below.
+
+Rules:
+- Answer in 2 to 4 short sentences, plain and warm, speaking to the dreamer as "you". No headings, lists or preamble.
+- Base everything on specific dreams. Put the id of every dream you drew on in "cited", most relevant first, at most 8. Refer to dreams by their titles in the answer, never by id.
+- Describe patterns you can see in the records: what recurs, when, alongside which people, places and feelings. Never interpret symbols, never say what a dream means, never give universal dream meanings, and never diagnose or comment on mental or physical health.
+- If the records don't support an answer, or you are unsure, say so plainly and set "sure" to false.
+- Dates are written year-month-day.
+
+The dreamer's question: ${question}
+
+Their dreams (${archive.length}):
+
+${lines}
+
+Reply with only JSON in exactly this shape:
+{"answer": "", "cited": [], "sure": true}`;
+}
+const ASK_LINES = ['Reading the charts…', 'Tracing old paths between stars…', 'Listening for echoes…', 'Checking the oldest light…'];
+function showAstro() {
+  if (!astro) return;
+  clearSelection(false); panelMode = 'astro'; $('#pLeaf').hidden = true;
+  $('#pEyebrow').textContent = 'The Astronomer';
+  let html = `<p class="astro-q">${esc(astro.q)}</p>`;
+  if (astro.status === 'loading') html += `<p class="astro-wait"><span class="reading"><i></i><i></i><i></i><span id="astroLine">${ASK_LINES[0]}</span></span></p>`;
+  else if (astro.status === 'error') html += `<p class="astro-a" style="color:var(--mist)">${esc(astro.error)}</p><div class="p-actions"><button class="btn ghost" data-astro-retry="1">Try again</button></div>`;
+  else {
+    html += `<p class="astro-a">${esc(astro.answer)}</p>`;
+    const cited = astro.cited.map(id => model.dreams.find(d => d.id === id)).filter(Boolean);
+    if (cited.length) html += `<div class="sec"><h3>Drawn from · ${cited.length}</h3><div class="links">${cited.map(b => `<button class="link" data-i="${b.i}"><span class="dot" style="background:${FEEL[b.feel].hex}"></span><span class="lt">${esc(b.title)}<span class="dt">${fmtShort(b.t)}</span></span></button>`).join('')}</div></div>`;
+    html += `<p class="note">The Astronomer reads only what you've written. It notices patterns; it doesn't interpret them.</p>`;
+  }
+  $('#pBody').innerHTML = html; $('#pBody').scrollTop = 0;
+  openPanel();
+}
+async function askAstronomer(question) {
+  question = question.slice(0, 300);
+  q.value = ''; q.blur(); body.classList.remove('search-open'); syncAskHint();
+  if (filterKey) setFilter(null, null, false);
+  if (astroCtl) astroCtl.abort();
+  astro = { q: question, status: 'loading' };
+  setKey(false); showAstro();
+  let li = 0; const tick = setInterval(() => { const el = $('#astroLine'); if (!el) { clearInterval(tick); return; } el.textContent = ASK_LINES[++li % ASK_LINES.length]; }, 2600);
+  const ctl = astroCtl = new AbortController(), mine = astro;
+  try {
+    const raw = await askClaude(question, archiveForAsk(), ctl.signal);
+    if (astro !== mine) return;
+    const ids = new Set(model.dreams.map(d => d.id));
+    mine.answer = String(raw?.answer || '').trim().slice(0, 1200) || "I couldn't find anything in your dreams to answer that.";
+    mine.cited = (Array.isArray(raw?.cited) ? raw.cited : []).map(String).filter((id, i, a) => ids.has(id) && a.indexOf(id) === i).slice(0, 8);
+    mine.status = 'done';
+    const set = new Set(mine.cited.map(id => model.dreams.find(d => d.id === id).i));
+    if (panelMode === 'astro' && body.classList.contains('panel-open')) {
+      if (set.size) {
+        filterKey = null; setFilter('astro', set, false);
+        // frame the cited stars in the part of the sky the answer panel leaves open
+        const c = new THREE.Vector3(); set.forEach(i => c.add(model.dreams[i].pos)); c.multiplyScalar(1 / set.size);
+        let rad = 0; set.forEach(i => rad = Math.max(rad, model.dreams[i].pos.distanceTo(c)));
+        const cur = getPose(), r = Math.max(110, rad * 3.4 + 70) * (innerWidth > 760 ? 1 : 1.3), phi = THREE.MathUtils.clamp(cur.phi, 0.9, 1.3);
+        flyTo({ target: framedTarget(c, r, cur.theta, phi), r, theta: cur.theta, phi }, reduceMotion ? 0.001 : 2.4);
+      }
+      showAstro();
+    }
+  } catch (e) {
+    if (astro !== mine || e?.code === 'cancelled') return;
+    mine.status = 'error';
+    mine.error = e?.code === 'rate_limited' ? 'The sky is busy right now. Try again in a moment.' : e?.code === 'not_granted' ? "The Astronomer isn't available here." : "The Astronomer couldn't be reached. Try again in a moment.";
+    if (panelMode === 'astro') showAstro();
+  } finally { clearInterval(tick); if (astroCtl === ctl) astroCtl = null; }
+}
+
+/* ============================================================
+   Re-analyse: read every dream again with today's rules and vocabulary
+   ============================================================ */
+const RECAL_KEY = 'dream-atlas.recal', RECAL_EVERY = 10;
+let recalBusy = false, recalUndo = null, recalCtl = null;
+const recalBase = () => { try { return +(localStorage.getItem(RECAL_KEY) || 0); } catch (e) { return 0; } };
+const setRecalBase = n => { try { localStorage.setItem(RECAL_KEY, String(n)); } catch (e) {} };
+async function maybeOfferRecal() {
+  if (recalBusy || recalUndo) return;
+  if (!(await samplePromise) || aiOff) return;
+  if (MINE.length - recalBase() < RECAL_EVERY) return;
+  $('#recalMsg').textContent = 'Your sky has grown. Seek connections anew?';
+  $('#recalRow').innerHTML = '<button class="btn primary" id="recalGo">Re-analyse</button>';
+  $('#recal').hidden = false;
+}
+function mergeReading(rec, t) {
+  const edited = !!rec.editedAt || /you/.test(rec.tagger || '');
+  const uni = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+  const out = { ...rec, analysedAt: Date.now() };
+  out.motifLabels = { ...(t.motifLabels || {}), ...(rec.motifLabels || {}) };
+  if (!edited) {
+    Object.assign(out, { feel: t.feel, vivid: t.vivid, lucid: t.lucid, motifs: t.motifs, motifNear: t.motifNear, people: t.people, places: t.places, objects: t.objects,
+      details: t.details, themes: t.themes, suggested: t.suggested, tagger: 'claude' });
+    if (!rec.tidied && t.tidied) out.tidied = t.tidied;
+    if (!out.motifs.length) out.motifs = rec.motifs || [];
+  } else {
+    // your edits stand; a re-read can only add
+    out.motifs = uni(rec.motifs, t.motifs).slice(0, Math.max(4, (rec.motifs || []).length));
+    out.motifNear = { ...(t.motifNear || {}), ...(rec.motifNear || {}) };
+    ['people', 'places', 'objects', 'details', 'themes', 'suggested'].forEach(k => out[k] = uni(rec[k], t[k]));
+  }
+  Object.keys(out.motifLabels).forEach(k => { if (!out.motifs.includes(k)) delete out.motifLabels[k]; });
+  return out;
+}
+async function runRecal() {
+  if (recalBusy) return;
+  recalBusy = true;
+  const todo = MINE.slice(), before = JSON.parse(JSON.stringify(MINE)), done = new Map();
+  let failed = 0, n = 0;
+  const ctl = recalCtl = new AbortController();
+  const row = $('#recalRow');
+  const progress = () => { row.innerHTML = `<span class="reading"><i></i><i></i><i></i><span>Reading ${Math.min(n + 1, todo.length)} of ${todo.length}…</span></span><button class="btn ghost" id="recalStop" style="margin-left:auto">Stop</button>`; };
+  $('#recalMsg').textContent = 'Seeking connections anew…'; progress();
+  let next = 0;
+  const worker = async () => {
+    while (next < todo.length && !ctl.signal.aborted) {
+      const rec = todo[next++];
+      try { const raw = await tagDream(rec.text, ctl.signal); done.set(rec.id, mergeReading(rec, normalise(raw, rec.text))); }
+      catch (e) { if (e?.code === 'cancelled' || ctl.signal.aborted) break; failed++; }
+      n++; if (!ctl.signal.aborted) progress();
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  recalCtl = null;
+  const changed = [...done.values()].filter(r => JSON.stringify({ ...r, analysedAt: 0 }) !== JSON.stringify({ ...before.find(b => b.id === r.id), analysedAt: 0 }));
+  for (const r of done.values()) await store.update(r);
+  MINE = MINE.map(r => done.get(r.id) || r);
+  MINE.forEach(adoptMotifLabels);
+  recalBusy = false;
+  if (!done.size) {
+    $('#recalMsg').textContent = failed ? "Couldn't reach Claude just now." : 'Stopped before anything changed.';
+    row.innerHTML = '<button class="btn primary" id="recalGo">Try again</button>';
+    return;
+  }
+  setRecalBase(MINE.length);
+  recalUndo = before; $('#recal').hidden = false;
+  closePanel(); clearSelection(false); panelMode = null;
+  rebuildSky({ crossfade: true, migrate: true });
+  $('#recalMsg').textContent = `Re-analysed ${done.size} dream${done.size === 1 ? '' : 's'}${changed.length !== done.size ? `, ${changed.length} changed` : ''}.${failed ? ` ${failed} couldn't be read.` : ''}`;
+  row.innerHTML = '<button class="btn ghost" id="recalUndo">Undo</button><span class="r-note">Your own edits were kept.</span>';
+}
+async function undoRecal() {
+  if (!recalUndo) return;
+  const before = recalUndo; recalUndo = null;
+  for (const r of before) await store.update(r);
+  MINE = before; MINE.forEach(adoptMotifLabels);
+  closePanel(); clearSelection(false); panelMode = null;
+  rebuildSky({ crossfade: true, migrate: true });
+  $('#recal').hidden = true; toast('Back to how your sky was.');
+}
+$('#recal').addEventListener('click', e => {
+  if (e.target.closest('#recalGo')) runRecal();
+  else if (e.target.closest('#recalStop')) recalCtl?.abort();
+  else if (e.target.closest('#recalUndo')) undoRecal();
+  else if (e.target.closest('#recalX')) { if (recalBusy) recalCtl?.abort(); if (!recalUndo) setRecalBase(MINE.length); recalUndo = null; $('#recal').hidden = true; }
+});
+
+/* ============================================================
+   Backup: your dreams as one file, and back again
+   ============================================================ */
+const BK_KEY = 'dream-atlas.lastExport';
+function syncBackupNote() {
+  let last = 0; try { last = +(localStorage.getItem(BK_KEY) || 0); } catch (e) {}
+  const n = MINE.length;
+  $('#bkNote').textContent = !n ? 'Nothing to back up yet.' : `${n} dream${n === 1 ? '' : 's'} of yours.` + (last ? ' Last exported ' + new Date(last).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) + '.' : ' Not exported yet.');
+  $('#bkExport').disabled = !n;
+}
+async function exportBackup() {
+  if (!MINE.length) return;
+  const data = JSON.stringify({ app: 'dream-atlas', version: 1, exportedAt: new Date().toISOString(), dreams: MINE.map(r => { const { source, ...rest } = r; return rest; }) }, null, 2);
+  const filename = 'dream-atlas-backup-' + localISO(new Date()) + '.json';
+  let ok = false;
+  const dl = await useCap('downloads');
+  if (dl) { try { await dl.save({ filename, data }); ok = true; } catch (e) { if (e?.code === 'declined') return; } }
+  if (!ok) {
+    try {
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+      const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000); ok = true;
+    } catch (e) {}
+  }
+  if (ok) { try { localStorage.setItem(BK_KEY, String(Date.now())); } catch (e) {} syncBackupNote(); toast('Backup saved.'); }
+  else toast("Couldn't save the backup here.", 5000);
+}
+async function importBackup(file) {
+  let parsed;
+  try { parsed = JSON.parse(await file.text()); } catch (e) { toast("That file isn't a Dream Atlas backup.", 5000); return; }
+  const list = (Array.isArray(parsed) ? parsed : parsed?.dreams || []).filter(x => x && typeof x.text === 'string' && x.id && x.date);
+  if (!list.length) { toast("That file isn't a Dream Atlas backup.", 5000); return; }
+  let added = 0, updated = 0;
+  const byId = new Map(MINE.map(r => [r.id, r]));
+  for (const raw of list) {
+    const r = { ...raw, source: 'you' }, cur = byId.get(r.id);
+    const stamp = x => x.editedAt || x.analysedAt || x.createdAt || 0;
+    if (!cur) { await store.update(r); byId.set(r.id, r); added++; }
+    else if (stamp(r) > stamp(cur)) { await store.update(r); byId.set(r.id, r); updated++; }
+  }
+  MINE = [...byId.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  MINE.forEach(adoptMotifLabels);
+  if (added || updated) { closePanel(); clearSelection(false); panelMode = null; rebuildSky({ crossfade: true, migrate: true }); }
+  syncBackupNote();
+  toast(added || updated ? `Added ${added}, updated ${updated}.` : 'Nothing new in that backup.', 5000);
+}
+$('#bkExport').addEventListener('click', exportBackup);
+$('#bkImport').addEventListener('click', () => $('#bkFile').click());
+$('#bkFile').addEventListener('change', e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importBackup(f); });
+
 function adoptMotifLabels(rec) { Object.entries(rec.motifLabels || {}).forEach(([k, v]) => { if (!MOTIF[k]) MOTIF[k] = v; }); }
 async function loadMine() {
   const list = (await store.init()).filter(x => x && typeof x.text === 'string' && x.id && x.date);
@@ -1926,6 +2261,8 @@ async function loadMine() {
   list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   MINE = list;
   if (MINE.length) rebuildSky({ crossfade: true, migrate: true });
+  syncBackupNote();
+  setTimeout(maybeOfferRecal, 4000);
 }
 
 /* ============================================================
@@ -1945,6 +2282,17 @@ async function callTagger(text, signal) {
   return body;
 }
 const samplePromise = Promise.resolve({ json: callTagger });
+const tagDream = (text, signal) => callTagger(text, signal);
+async function askClaude(question, archive, signal) {
+  let res;
+  try { res = await fetch(TAG_ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: 'ask', question, archive }), signal }); }
+  catch (e) { throw { code: signal?.aborted ? 'cancelled' : 'upstream_error' }; }
+  if (res.status === 429) throw { code: 'rate_limited' };
+  if (!res.ok) throw { code: 'upstream_error' };
+  const body = await res.json().catch(() => null);
+  if (!body || typeof body !== 'object') throw { code: 'invalid_json' };
+  return body;
+}
 function vocabulary() {
   const by = { person: new Set(), place: new Set(), object: new Set(), detail: new Set() };
   currentList().forEach(d => { (d.people || []).forEach(x => isGeneric(x) || by.person.add(x)); (d.places || []).forEach(x => isGeneric(x) || by.place.add(x)); (d.objects || []).forEach(x => isGeneric(x) || by.object.add(x)); (d.details || []).forEach(x => by.detail.add(x)); });
@@ -2137,9 +2485,9 @@ function openCapture() {
   if (ambient) exitAmbient();
   closePanel(); clearSelection(false); panelMode = null; hideTip();
   setKey(false); body.classList.remove('search-open');
-  if (!dateIn.value) dateIn.value = localISO(new Date());
   dateIn.max = localISO(new Date());
   if (!ta.value) { try { ta.value = localStorage.getItem(DRAFT) || ''; } catch (e) {} }
+  if (!ta.value.trim() || !dateIn.value) dateIn.value = localISO(new Date(Date.now() - 864e5)); // most dreams are written the morning after
   capturing = true; body.classList.add('capturing'); $('#sheet').setAttribute('aria-hidden', 'false'); $('#sheet').inert = false;
   samplePromise.then(s => { if (!s) aiOff = true; if (!busy) resetSheet(); });
   resetSheet();
@@ -2196,6 +2544,7 @@ async function submitDream(skipAI) {
   ta.value = ''; try { localStorage.removeItem(DRAFT); } catch (e) {}
   busy = false; closeCapture();
   MINE.push(rec); arrive(rec);
+  syncBackupNote(); setTimeout(maybeOfferRecal, 9000);
   if (!saved) toast("This dream couldn't be saved, so it will be gone after a reload.", 6000);
   else if (tagger === 'none') toast("Added as a lone star. AI tagging isn't available here.", 5000);
 }
