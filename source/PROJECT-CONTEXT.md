@@ -30,6 +30,18 @@ The guiding principles:
 - **Claude Code handoff folder:** CLAUDE.md, KICKOFF.md, brief v1.2, the prototype, and demo data. The port to a proper codebase is still to come.
 - **Labs:** standalone test pages for single components, kept in the chat and never pushed live. The first is `region-title-lab.html`.
 
+## Source of truth: the GitHub repo
+
+Everything a new chat needs is in `Astrosomnia/dream-atlas`. Clone it first.
+
+- `index.html`: the public site, served by GitHub Pages.
+- `source/dream-atlas-claude.html`: the Claude version. Publish it to the artifact URL above, and read the live artifact first in case it's newer.
+- `source/worker.js`: the Cloudflare Worker. Keep it in step with what's deployed. Jarred pastes it in by hand.
+- `source/PROJECT-CONTEXT.md`: a copy of this doc.
+- `labs/`: component test pages. `audio/`: `ambience.js`, the music brief and a preview render.
+
+After each batch, commit both builds and the worker together, and update this doc in both the project and the repo.
+
 ## The two builds
 
 The Claude version and `index.html` are the same code with a few differences. The Claude version uses claude.ai's `sample` and `db`. The public site uses `useCap()` returning null, `callTagger` and `askClaude` posting to the worker, and OG meta tags. `tagDream()` and `askClaude()` hide the difference from the rest of the code. Every change is applied to both. The version string sits in the How to Read panel ("Version 0.xx · date").
