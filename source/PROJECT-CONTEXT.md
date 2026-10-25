@@ -1,6 +1,6 @@
 # Dream Atlas: project context
 
-Last updated 25 Oct 2026 (version 0.24).
+Last updated 25 Oct 2026 (version 0.25).
 
 ## What it is
 
@@ -66,7 +66,7 @@ Wonder `#74d7cf` · Joy `#f3e08f` · Longing `#df9fb2` · Sadness `#7f9fe0` · C
 
 The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary". Recurring dream mechanics, like legs that won't run, belong in motifs rather than the feeling.
 
-## What's built (v0.24)
+## What's built (v0.25)
 
 - Capture: text plus voice dictation, which merges Android's cumulative results. The mic sits inside the text box, gold while it's empty. New dreams default to last night.
 - Claude tagging with a supernova arrival. The spelling tidy is a setting, with the original always kept.
@@ -82,12 +82,13 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 - **The "new threads" reveal:** a gold numeral plus *new threads* header at the top. Gained tags show in gold until it's cleared, leafing is grouped by thread, and two taps on the sky clear it.
 - Backup export and import, in How to Read.
 - Nebulae repaint after phone GPU resets, and the sky holds still under the phone keyboard.
+- **Sound (v0.25):** a generative ambient bed (`audio/ambience.js`, inlined into both builds). It's a five-bar waveform toggle beside the ambient-mode moon (beside Record on phones), with **M** as the key. Off by default. The choice is remembered, and a remembered "on" starts at the first tap or key press. It fades out and suspends when the tab is hidden, steps aside while the microphone is listening, and keeps playing in ambient mode.
 
 ## Outstanding (as of 25 Oct)
 
 - **Jarred:** live with v0.24 on real dreams. Run Re-analyse, judge the moments and any regions that form, and check the arrival ceremony's timing on a phone (it hasn't been seen in motion).
 - **Jarred:** make sure the API keys pasted in chat early on are revoked. Only the Cloudflare secret should exist.
-- **Music:** `audio/ambience.js` v8 is ready to wire into the site (waveform toggle, off by default, fade when the tab is hidden). `audio/music-brief.md` describes it and what was tried.
+- **Jarred:** listen to the sound in the app on desktop and phone (v0.25). Tune it in the music thread using `audio/music-brief.md`. When `audio/ambience.js` changes, re-inline it into both builds (the block starts at "Sound: a generative ambient bed").
 - **Roadmap doc:** refresh it. It predates the Astronomer, backup, leafing and live regions shipping.
 - **Claude Code folder:** its prototype copy is v0.10. Replace it with the current build before any port.
 - **Data:** clean up the old details and themes once everything has been re-analysed.
@@ -95,7 +96,7 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 
 ## Later and roadmap
 
-- Music and ambience: `audio/ambience.js` v8 is a generative Web Audio pad that wanders between keys, plus a drone, faint air, and far-off bells that sing short phrases from a small songbook. Not wired into the site yet. The toggle will be a waveform icon.
+- Music: maybe let it respond to the sky (the mix of feelings) or to ambient mode, only if it stays subtle.
 - A readable journal export.
 - Remove the demo dreams once real dreams are in. That also fixes demo stars gliding on reload.
 - Port to Claude Code: TypeScript, Vite, three, IndexedDB, plus the screenshot-verification loop.
