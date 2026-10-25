@@ -25,7 +25,7 @@ The guiding principles:
 - **Relay:** a Cloudflare Worker at dream-atlas.jarredpowell88.workers.dev (`worker.js`).
   - Modes: single tag and `tagBatch` (Re-analyse) use `claude-haiku-5-5`; `region` (should a shared moment become a nebula?) and `ask` (the Astronomer) use `claude-sonnet-5-5`.
   - It builds prompts server-side, only accepts requests from the GitHub Pages origin, and keeps the API key only as the Cloudflare secret `ANTHROPIC_API_KEY`.
-  - Jarred pastes updates in by hand. The v0.24 worker (moments, batch and region modes) needed pasting as of 25 Oct.
+  - **Deploys automatically:** pushing a change to `source/worker.js` (or `wrangler.toml`) on main runs the GitHub Action "Deploy worker", which publishes it to Cloudflare with Wrangler. The Cloudflare token and account ID are GitHub repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). The token expires Oct 2027. No more manual pastes.
 - **Roadmap doc:** claude.ai/artifact/Mh45DGRcRymq1hs2zrz54Q. Five phases, 16 features.
 - **Claude Code handoff folder:** CLAUDE.md, KICKOFF.md, brief v1.2, the prototype, and demo data. The port to a proper codebase is still to come.
 - **Labs:** standalone test pages for single components, in the repo's `labs/` folder and served at astrosomnia.github.io/dream-atlas/labs/<name>.html (unlinked). The first is `region-title-lab.html`.
@@ -36,7 +36,7 @@ Everything a new chat needs is in `Astrosomnia/dream-atlas`. Clone it first.
 
 - `index.html`: the public site, served by GitHub Pages.
 - `source/dream-atlas-claude.html`: the Claude version. Publish it to the artifact URL above, and read the live artifact first in case it's newer.
-- `source/worker.js`: the Cloudflare Worker. Keep it in step with what's deployed. Jarred pastes it in by hand.
+- `source/worker.js`: the Cloudflare Worker. Pushing it deploys it (see `wrangler.toml` and `.github/workflows/deploy-worker.yml`).
 - `source/PROJECT-CONTEXT.md`: a copy of this doc.
 - `labs/`: component test pages. `audio/`: `ambience.js`, the music brief and a preview render.
 
