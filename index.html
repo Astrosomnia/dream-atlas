@@ -345,7 +345,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.20 · 24 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.21 · 24 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -2086,6 +2086,21 @@ function joinSpeech(base, add) {
   if (!base.trim() || /[.!?]\s*$/.test(base)) add = add[0].toUpperCase() + add.slice(1);
   return base.trim() ? base.replace(/\s+$/, '') + ' ' + add : add;
 }
+// Chrome on Android re-sends the whole phrase so far as each new result ("I was", "I was walking", ...),
+// while desktop sends separate pieces. When a result just extends (or revises) the one before, replace it.
+function mergeSpeech(parts) {
+  const words = x => x.toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const segs = [];
+  parts.map(t => t.trim()).filter(Boolean).forEach(t => {
+    const last = segs[segs.length - 1];
+    if (last === undefined) { segs.push(t); return; }
+    const A = words(last), B = words(t);
+    let k = 0; while (k < A.length && k < B.length && A[k] === B[k]) k++;
+    if (k >= Math.min(A.length, B.length) || k >= Math.max(2, Math.ceil(A.length * 0.6))) { if (B.length >= A.length) segs[segs.length - 1] = t; }
+    else segs.push(t);
+  });
+  return segs.join(' ');
+}
 function micUI() {
   syncMic();
   if (!busy) { sNote.className = 's-note'; sNote.textContent = micOn ? 'Listening. Tap the microphone again when you’re done.' : (aiOff ? NOTE_OFF : NOTE_DEFAULT); }
@@ -2098,7 +2113,7 @@ function micListen() {
   r.lang = navigator.language || 'en-AU'; r.continuous = true; r.interimResults = true;
   r.onresult = e => {
     if (rec !== r) return;
-    const heard = Array.from(e.results).map(x => x[0].transcript.trim()).filter(Boolean).join(' ');
+    const heard = mergeSpeech(Array.from(e.results).map(x => x[0].transcript));
     micWriting = true; ta.value = joinSpeech(micBase, heard); ta.dispatchEvent(new Event('input')); micWriting = false;
     ta.scrollTop = ta.scrollHeight;
   };
