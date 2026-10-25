@@ -1,6 +1,6 @@
 # Dream Atlas: project context
 
-Last updated 25 Oct 2026 (version 0.29).
+Last updated 25 Oct 2026 (version 0.30).
 
 ## What it is
 
@@ -66,7 +66,7 @@ Wonder `#74d7cf` · Joy `#f3e08f` · Longing `#df9fb2` · Sadness `#7f9fe0` · C
 
 The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary". Recurring dream mechanics, like legs that won't run, belong in motifs rather than the feeling.
 
-## What's built (v0.29)
+## What's built (v0.30)
 
 - Capture: text plus voice dictation, which merges Android's cumulative results. The mic sits inside the text box, gold while it's empty. New dreams default to last night.
 - Claude tagging with a supernova arrival. The spelling tidy is a setting, with the original always kept.
@@ -76,17 +76,20 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 - Feeling filter (tap a feeling or a swatch) and the search capsule, bottom left, cleared with its ×.
 - Leafing through dreams: swipe on a phone, arrows and arrow keys on desktop. It moves chronologically within whatever is lit; in a reveal it's grouped by thread.
 - **The Astronomer** in the search field ("Search or ask"): the answer appears in the panel, the cited dreams light up, and you can leaf through just those. Closing it returns to the full sky.
-- **Emerging regions:** when a moment is shared by three dreams, a region call decides whether it becomes a nebula and which dreams move there.
-- **Region arrival ceremony,** whenever any new nebula forms: the nebula flares and cools, the stars glide together, and the name writes in place as glowing, wide-spaced mono caps before drawing together into a normal label. It's non-cartographic, at the slow 0.5× pace, staggered so each title starts halfway through the one before. Any tap skips it, and the camera only moves if the region is off-screen.
-- **Re-analyse:** batches of six dreams per call, offered only on evidence (or once for dreams read before moments existed), as a slim capsule: "✦ Your sky has grown. Seek connections anew? [Re-analyse]", then "Weaving new threads…". No Undo.
-- **The "new threads" reveal:** a gold numeral plus *new threads* header at the top. Gained tags show in gold until it's cleared, leafing is grouped by thread, and two taps on the sky clear it.
+- **Emerging regions:** when a moment is shared by three dreams, a region call decides whether it becomes a nebula and which dreams move there. Region and new-motif names are 1–3 words, never more than 4 (asked for in the prompts and enforced by `shortName()`).
+- **The region tour (v0.30),** whenever new regions form after a re-read or emergence: they form one at a time, largest first, at most three (the rest form quietly). The camera flies close to where the region will be. Its stars wait unlit at their old homes, then glide in, the filaments fade in and the nebula condenses, flares and cools while the name writes in. Titles start at about 14px, sized to stay within 80% of the screen. A capsule reads "✦ New regions · 1 of 2"; a tap skips to the next region, the × or Escape skips the rest, and the camera returns afterwards. A region formed by recording or editing a dream (a motif reaching two dreams) still gets the in-place ceremony, now with the same smaller title.
+- **Re-analyse:** batches of six dreams per call, offered only on evidence (or once for dreams read before moments existed), as a slim capsule: "✦ Your sky has grown. Seek connections anew? [Re-analyse]", then "Weaving new threads… 12 / 29" and "Looking for new regions…". Emergence is checked before the sky changes, so it changes once, in order: gold header, region tour, then the reveal. No Undo.
+- **The "new threads" reveal:** a gold numeral plus *new threads* header at the top, and a panel listing each new thread with its dreams. Gained tags show in gold, dreams have a "‹ New threads" link back, and leafing stays within the reveal, grouped by thread. It's a real filter shown as a "✦ New threads" capsule bottom left: tapping the sky only closes the panel, tapping the capsule reopens the list, and its × clears it. Ambient mode never starts during the sequence.
+- **Recurring (v0.30):** the chips along the bottom are whatever comes back most, of any kind (motif, person, place, thing, moment), ranked by how many dreams share the word, up to 30, each with its count and a dot in its most common feeling. Tapping one lights those dreams (and the nebula, if it's a motif).
 - Backup export and import, in How to Read.
 - Nebulae repaint after phone GPU resets, and the sky holds still under the phone keyboard.
 - **Sound (v0.29):** a generative ambient bed (`audio/ambience.js`, inlined into both builds) at master level 0.45. The toggle is a small signal-trace wave (a flat line with a few cycles in the middle), still and dim when off, brighter and gently flowing when on, easing between the two. It sits beside the ambient-mode moon (above Record on phones), with **M** as the key. On by default: browsers block sound until the first interaction, so it fades in at the first tap or key press (on touch, that's when the finger lifts). Turning it off is remembered. It fades out and suspends when the tab is hidden, steps aside while the microphone is listening, uses the larger 'playback' audio buffer so a busy sky doesn't crackle it, and keeps playing in ambient mode.
 
 ## Outstanding (as of 25 Oct)
 
-- **Jarred:** live with v0.24 on real dreams. Run Re-analyse, judge the moments and any regions that form, and check the arrival ceremony's timing on a phone (it hasn't been seen in motion).
+- **Jarred:** live with v0.30 on real dreams. Run Re-analyse and judge the region tour and the reveal on a phone.
+- **Threads lab (in progress, not in the repo yet):** claude.ai/artifact/DGZkZkrNRGsRP2RQPtrc65, built from the site with fictional dreams and scripted Claude replies. Next up there: calmer star moves when regions form, swiping the reveal thread by thread with its links drawn, and a Start over that clears the lab's memory. It also holds a fix for the brief flash of the interface before the opening fly-in.
+- **Existing long names:** regions named before v0.30 (e.g. "Missing a flight or train") keep their names. Renaming needs a rename in the tag editor or a one-off tidy.
 - **Jarred:** make sure the API keys pasted in chat early on are revoked. Only the Cloudflare secret should exist.
 - **Jarred:** listen to the sound in the app on desktop and phone (v0.29). Tune it in the music thread using `audio/music-brief.md`. When `audio/ambience.js` changes, re-inline it into both builds (the block starts at "Sound: a generative ambient bed").
 - **Roadmap doc:** refresh it. It predates the Astronomer, backup, leafing and live regions shipping.
