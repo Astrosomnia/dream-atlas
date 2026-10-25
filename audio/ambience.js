@@ -331,7 +331,7 @@ function makeAmbience(ctx, opts = {}) {
         [lfo, drone, droneLfo, air, airLfo, panLfo].forEach(n => n.start(t));
       }
       master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t);
-      master.gain.linearRampToValueAtTime(opts.level ?? 0.6, t + fade);
+      master.gain.linearRampToValueAtTime(opts.level ?? 0.45, t + fade);
       if (opts.offline) scheduleUntil(opts.offline);
       else { scheduleUntil(t + 20); clearInterval(timer); timer = setInterval(() => scheduleUntil(ctx.currentTime + 20), 2000); }
     },

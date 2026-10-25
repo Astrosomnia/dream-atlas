@@ -333,11 +333,8 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   .s-foot { flex-direction: column; align-items: stretch; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); }
   .s-actions { justify-content: flex-end; }
 }
-/* ---------- sound: five thin bars, dots when off, a slow ripple when on ---------- */
-#btnSound svg line { transform-box: fill-box; transform-origin: center; transform: scaleY(.001); transition: transform 1.1s var(--ease); }
-#btnSound[aria-pressed="true"] svg line { transform: scaleY(var(--h)); animation: soundWave 3.4s ease-in-out var(--d) infinite alternate; }
-@keyframes soundWave { from { transform: scaleY(calc(var(--h) * .3)); } to { transform: scaleY(var(--h)); } }
-@media (prefers-reduced-motion: reduce) { #btnSound[aria-pressed="true"] svg line { animation: none; } }
+/* ---------- sound: a small waveform; still and smaller when off, brighter and gently flowing when on (drawn in script) ---------- */
+#btnSound svg path { stroke-width: 1.6; }
 @media (prefers-reduced-motion: reduce) {
   .ui, #panel, .bottom, #key { transition: none !important; }
 }
@@ -372,7 +369,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5"/></svg>
     </button>
     <button class="icon-btn" id="btnSound" aria-label="Sound" title="Sound (M)" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4.5" y1="6" x2="4.5" y2="18" vector-effect="non-scaling-stroke" style="--h:.38;--d:-.4s"/><line x1="8.25" y1="6" x2="8.25" y2="18" vector-effect="non-scaling-stroke" style="--h:.72;--d:-1.9s"/><line x1="12" y1="6" x2="12" y2="18" vector-effect="non-scaling-stroke" style="--h:1;--d:-.9s"/><line x1="15.75" y1="6" x2="15.75" y2="18" vector-effect="non-scaling-stroke" style="--h:.6;--d:-2.6s"/><line x1="19.5" y1="6" x2="19.5" y2="18" vector-effect="non-scaling-stroke" style="--h:.42;--d:-1.4s"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path id="soundWave" d="M4 12h16"/></svg>
     </button>
     <button class="icon-btn" id="btnAmbient" aria-label="Ambient mode" title="Ambient mode (A)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/></svg>
@@ -400,7 +397,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.25 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.26 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record are saved privately to you; nobody else who opens this page can see them.</p>
 </div>
 
@@ -3192,7 +3189,7 @@ function makeAmbience(ctx, opts = {}) {
         [lfo, drone, droneLfo, air, airLfo, panLfo].forEach(n => n.start(t));
       }
       master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t);
-      master.gain.linearRampToValueAtTime(opts.level ?? 0.6, t + fade);
+      master.gain.linearRampToValueAtTime(opts.level ?? 0.45, t + fade);
       if (opts.offline) scheduleUntil(opts.offline);
       else { scheduleUntil(t + 20); clearInterval(timer); timer = setInterval(() => scheduleUntil(ctx.currentTime + 20), 2000); }
     },
@@ -3207,7 +3204,7 @@ const SOUND_KEY = 'dream-atlas.sound';
 const sound = { ctx: null, amb: null, on: false, ducked: false, sus: 0 };
 try { sound.on = localStorage.getItem(SOUND_KEY) === '1'; } catch (e) {}
 function soundAudible() { return sound.on && !sound.ducked && !document.hidden; }
-function soundUI() { const b = $('#btnSound'); b.setAttribute('aria-pressed', String(sound.on)); b.title = sound.on ? 'Sound on (M)' : 'Sound (M)'; }
+function soundUI() { const b = $('#btnSound'); b.setAttribute('aria-pressed', String(sound.on)); b.title = sound.on ? 'Sound on (M)' : 'Sound (M)'; kickWave(); }
 function soundApply(fade) {
   clearTimeout(sound.sus);
   if (!soundAudible()) {
@@ -3223,6 +3220,29 @@ function soundApply(fade) {
   if (sound.ctx.state !== 'running') sound.ctx.resume().catch(() => {});
   sound.amb.start(fade);
 }
+// the icon: a wave that eases between a small still form (off) and a fuller, slowly flowing one (on)
+const wave = { amp: sound.on ? 1 : 0, speed: sound.on && !reduceMotion ? 1 : 0, phase: 0, raf: 0, last: 0 };
+function drawWave() {
+  const a = wave.amp, half = 7.5 + 1.8 * a, A = 2.6 + 2.3 * a * (1 + 0.12 * Math.sin(wave.phase * 0.43));
+  let d = '';
+  for (let i = 0; i <= 40; i++) {
+    const u = i / 40 * 2 - 1, x = 12 + u * half, env = 1 - u * u;            // tapers to nothing at both ends
+    const y = 12 - A * env * Math.sin(u * Math.PI * 1.75 + wave.phase);
+    d += (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(2);
+  }
+  $('#soundWave').setAttribute('d', d);
+}
+function tickWave(now) {
+  const dt = Math.min(0.1, (now - (wave.last || now)) / 1000); wave.last = now;
+  const ta = sound.on ? 1 : 0, ts = sound.on && !reduceMotion ? 1 : 0, k = 1 - Math.exp(-dt * 3.2);
+  wave.amp += (ta - wave.amp) * k; wave.speed += (ts - wave.speed) * k;
+  wave.phase += wave.speed * dt * 2.1;
+  drawWave();
+  const settled = ts === 0 && Math.abs(ta - wave.amp) < 0.004 && wave.speed < 0.004;
+  if (settled) { wave.amp = ta; wave.speed = 0; drawWave(); }
+  wave.raf = settled ? 0 : requestAnimationFrame(tickWave);
+}
+function kickWave() { if (!wave.raf) { wave.last = 0; wave.raf = requestAnimationFrame(tickWave); } }
 function toggleSound() {
   sound.on = !sound.on;
   try { localStorage.setItem(SOUND_KEY, sound.on ? '1' : '0'); } catch (e) {}
@@ -3241,7 +3261,7 @@ const soundPhone = matchMedia('(max-width: 760px)');
 function placeSound() { const btn = $('#btnSound'); if (soundPhone.matches) $('.bottom-right').prepend(btn); else $('#btnAmbient').before(btn); }
 soundPhone.addEventListener('change', placeSound); placeSound();
 document.addEventListener('visibilitychange', () => { if (sound.ctx) soundApply(document.hidden ? 1.5 : 4); });
-soundUI();
+drawWave(); soundUI();
 
 document.addEventListener('visibilitychange', () => { if (document.hidden) renderer.setAnimationLoop(null); else startLoop(); });
 

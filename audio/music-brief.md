@@ -31,7 +31,7 @@ Generative Web Audio. No audio files, nothing to download.
   - One cycle of the form takes several minutes. Phrases are spaced 8–15 s apart, with longer rests.
 - **Chimes:** a closer, brighter two-note chime still exists in the code but is **off** (`chimes: true` turns it on). The bells carry the melody now.
 - **Reverb:** a generated 7 s dark hall. It's built from a fixed seed (`roomSeed`, default 5) so the room sounds and sits the same on every load. An unseeded room varied up to 7 dB between loads. The reverb send is high-passed at 140 Hz so the bass stays dry and even.
-- **Levels:** master 0.6, about −27 to −28 dB RMS, peaks around −12 dB. Nothing above 3 kHz.
+- **Levels:** master 0.45 (lowered from 0.6 once heard in the app), about −30 dB RMS, peaks around −14 dB. Nothing above 3 kHz.
 - **API:** `makeAmbience(ctx, { seed, level, out, offline, roomSeed, chimes, log })` returns `{ start(fade), stop(fade), master }`. `offline` (seconds) schedules everything up front for rendering with an `OfflineAudioContext`. `log(kind, time, detail)` reports chords, phrases, notes and key changes, which helps line up feedback with timestamps.
 
 ## What was tried and dropped
