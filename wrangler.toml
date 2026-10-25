@@ -1,0 +1,10 @@
+# Deploys source/worker.js to the existing Cloudflare Worker "dream-atlas".
+# The Anthropic key stays a Cloudflare secret (ANTHROPIC_API_KEY); deploys never touch it.
+name = "dream-atlas"
+main = "source/worker.js"
+compatibility_date = "2025-10-01"
+workers_dev = true
+keep_vars = true
+
+[ai]
+binding = "AI"
