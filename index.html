@@ -441,7 +441,7 @@ setTimeout(() => { if (!window.__atlasBooted) document.body.classList.remove('in
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.32 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.33 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -711,12 +711,21 @@ function motifRelatedness(model) {
   return R;
 }
 /* Regions remember where they sit, on this device, so the sky keeps its shape between visits and when it changes:
-   a new region appears where its dreams already are, and only its near neighbours shuffle over to make room. */
+   a new region appears where its dreams already are, and only its near neighbours shuffle over to make room.
+   The sky only moves when the dreams do: if nothing that shapes the layout has changed, the saved places are used exactly. */
 const SLOTS_KEY = 'dream-atlas.slots';
-let lastSlots = null;
+let lastSlots = null, slotsLive = false; // slotsLive: your dreams have loaded, so this sky is the real one and may be saved
 try { const v = JSON.parse(localStorage.getItem(SLOTS_KEY) || 'null'); if (v && v.sky > 0 && v.map) lastSlots = v; } catch (e) {}
+function layoutPrint(model) {
+  return String(hashStr(SEED + '#' + model.dreams.map(d => [d.id, d.date, d.motifs.join(','), JSON.stringify(d.motifNear || {}), [...d.labels].sort().join(',')].join('|')).sort().join('\n')));
+}
 function motifLayout(model) {
   const keys = model.motifOrder, n = keys.length, R = motifRelatedness(model), dreams = model.dreams;
+  const print = layoutPrint(model);
+  if (lastSlots?.print === print && keys.every(k => lastSlots.map[k])) { // nothing has changed since this sky was last drawn
+    model.sky = lastSlots.sky;
+    return new Map(keys.map(k => [k, new THREE.Vector3().fromArray(lastSlots.map[k])]));
+  }
   const size = keys.map(k => model.tags.get(k).members.length);
   const mass = size.map(c => 0.4 + c);                          // a lone motif is light; big regions are heavy
   const SKY = 50 + 30 * Math.sqrt(Math.max(1, dreams.length));  // the whole sky grows with the archive
@@ -774,9 +783,11 @@ function motifLayout(model) {
   }
   const map = {}; // regions not in this sky (another preview size, a dream removed) keep their place too
   Object.entries(lastSlots?.map || {}).forEach(([k, v]) => map[k] = v.map(x => +(x * scale).toFixed(2)));
-  keys.forEach((k, i) => map[k] = P[i].toArray().map(v => +v.toFixed(2)));
-  lastSlots = { sky: SKY, map };
-  try { localStorage.setItem(SLOTS_KEY, JSON.stringify(lastSlots)); } catch (e) {}
+  keys.forEach((k, i) => { map[k] = P[i].toArray().map(v => +v.toFixed(2)); P[i].fromArray(map[k]); }); // drawn exactly as saved
+  if (slotsLive) { // the sky drawn before your dreams load is a stand-in: it never becomes the saved sky
+    lastSlots = { sky: SKY, map, print };
+    try { localStorage.setItem(SLOTS_KEY, JSON.stringify(lastSlots)); } catch (e) {}
+  }
   return new Map(keys.map((k, i) => [k, P[i]]));
 }
 
@@ -2726,7 +2737,9 @@ async function loadMine() {
   list.forEach(r => { r.source = 'you'; adoptMotifLabels(r); });
   list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   MINE = list;
+  slotsLive = true;
   if (MINE.length) rebuildSky({ crossfade: true, migrate: true });
+  else if (model && lastSlots?.print !== layoutPrint(model)) rebuildSky(); // a sky with no dreams of yours: draw it once more, identically, so it's saved
   syncBackupNote();
   ceremonyArmed = true;
   setTimeout(maybeOfferRecal, 4000);
