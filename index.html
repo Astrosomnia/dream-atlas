@@ -176,6 +176,9 @@ body #recal .r-x { position: static; flex: none; }
 .thread { margin-top: 22px; }
 .thread h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; font: 400 10px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .thread h3 b { font-weight: 400; color: var(--faint); letter-spacing: .06em; }
+.thread-meta { margin: -6px 0 14px; font: 10.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
+.link.fresh .lt { color: var(--text); }
+.link .nw { font: 9.5px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-left: 8px; font-style: normal; }
 body #recal .r-row { display: contents; }
 body #recal .ghost-gold { height: 34px; padding: 0 16px; border-radius: 17px; border: 1px solid rgba(236, 215, 162, .55); color: var(--gold); background: transparent; font: 500 13px var(--f-ui); white-space: nowrap; flex: none; }
 body #recal .ghost-gold:hover { background: rgba(236, 215, 162, .08); }
@@ -438,7 +441,7 @@ setTimeout(() => { if (!window.__atlasBooted) document.body.classList.remove('in
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.31 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.32 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -707,6 +710,11 @@ function motifRelatedness(model) {
   model.motifRel = new Map(keys.map((k, i) => [k, keys.map((k2, j) => ({ k: k2, r: R[i][j] })).filter(x => x.r > 0.05).sort((a, b) => b.r - a.r)]));
   return R;
 }
+/* Regions remember where they sit, on this device, so the sky keeps its shape between visits and when it changes:
+   a new region appears where its dreams already are, and only its near neighbours shuffle over to make room. */
+const SLOTS_KEY = 'dream-atlas.slots';
+let lastSlots = null;
+try { const v = JSON.parse(localStorage.getItem(SLOTS_KEY) || 'null'); if (v && v.sky > 0 && v.map) lastSlots = v; } catch (e) {}
 function motifLayout(model) {
   const keys = model.motifOrder, n = keys.length, R = motifRelatedness(model), dreams = model.dreams;
   const size = keys.map(k => model.tags.get(k).members.length);
@@ -721,11 +729,24 @@ function motifLayout(model) {
     return THREE.MathUtils.clamp(Math.log1p((tNew - latest) / 864e5 / 30) / Math.log1p(spanDays / 30), 0, 1);
   });
   const targetR = keys.map((_, i) => SKY * (0.1 + 0.9 * quiet[i]) * (size[i] < 2 ? 0.7 : 1));
-  const P = keys.map((_, i) => slotInit(i).multiplyScalar(SKY / 320));
+  const scale = lastSlots ? SKY / lastSlots.sky : 1;
+  const known = keys.map(k => lastSlots?.map[k] ? new THREE.Vector3().fromArray(lastSlots.map[k]).multiplyScalar(scale) : null);
+  const warm = known.filter(Boolean).length >= 2;
+  const P = keys.map((k, i) => {
+    if (known[i]) return known[i].clone();
+    if (warm) { // a new region starts among the regions its dreams come from (or its closest relatives), not somewhere new
+      const at = new THREE.Vector3(); let w = 0;
+      model.tags.get(k).members.forEach(m => dreams[m].motifs.forEach(mm => { const j = keys.indexOf('motif:' + (MOTIF[mm] || mm).toLowerCase()); if (j >= 0 && j !== i && known[j]) { at.add(known[j]); w++; } }));
+      if (!w) keys.forEach((_, j) => { if (known[j] && R[i][j] > 0.05) { at.addScaledVector(known[j], R[i][j]); w += R[i][j]; } });
+      if (w) return at.multiplyScalar(1 / w).add(slotInit(i).multiplyScalar(SKY / 320 * 0.08));
+    }
+    return slotInit(i).multiplyScalar(SKY / 320);
+  });
+  const anchor = known.map(v => v && v.clone());
   const F = keys.map(() => new THREE.Vector3()), d = new THREE.Vector3();
-  const ITER = 420;
+  const ITER = warm ? 200 : 420;
   for (let it = 0; it < ITER; it++) {
-    const alpha = 1 - it / ITER;
+    const alpha = (warm ? 0.45 : 1) * (1 - it / ITER); // a warm sky only settles; it isn't solved again
     F.forEach(f => f.set(0, 0, 0));
     for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
       d.subVectors(P[j], P[i]); let L = d.length();
@@ -746,10 +767,16 @@ function motifLayout(model) {
       const pull = (targetR[i] - rad) * 0.025;
       F[i].x += ux * pull; F[i].z += uz * pull;
       F[i].y = F[i].y * 0.5 - p.y * 0.02;                              // keep the sky broadly disc-shaped
+      if (anchor[i]) F[i].addScaledVector(d.subVectors(anchor[i], p), 0.12); // an existing region holds its place, giving way only as much as it must
       const cap = 9 * SKY / 250, step = F[i].length(); if (step > cap) F[i].multiplyScalar(cap / step);
       p.addScaledVector(F[i], alpha);
     }
   }
+  const map = {}; // regions not in this sky (another preview size, a dream removed) keep their place too
+  Object.entries(lastSlots?.map || {}).forEach(([k, v]) => map[k] = v.map(x => +(x * scale).toFixed(2)));
+  keys.forEach((k, i) => map[k] = P[i].toArray().map(v => +v.toFixed(2)));
+  lastSlots = { sky: SKY, map };
+  try { localStorage.setItem(SLOTS_KEY, JSON.stringify(lastSlots)); } catch (e) {}
   return new Map(keys.map((k, i) => [k, P[i]]));
 }
 
@@ -1378,14 +1405,16 @@ function setStates() {
   if (world.held) world.held.forEach(key => (world.clusterLayers.get(key) || []).forEach(m => m.material.uniforms.uDim.value = 0));
 }
 
+// arcs: a selected star's links; with no star selected but a thread open in the reveal, the thread itself, dream to dream in date order
 function buildArcs() {
   if (world.arcs) { world.group.remove(world.arcs); world.arcs.geometry.dispose(); world.arcs.material.dispose(); world.arcs = null; }
-  if (selected < 0) return;
-  const a = model.dreams[selected], rels = model.rel[selected], SEG = 48;
-  if (!rels.length) return;
-  const pos = [], col = [], tt = [];
-  const ca = new THREE.Color(FEEL[a.feel].hex);
-  rels.forEach(({ j }, k) => {
+  let pairs = [];
+  if (selected >= 0) pairs = model.rel[selected].map(({ j }) => [selected, j]);
+  else { const th = openThread(); if (th) for (let k = 1; k < th.all.length; k++) pairs.push([th.all[k - 1], th.all[k]]); }
+  if (!pairs.length) return;
+  const SEG = 48, pos = [], col = [], tt = [];
+  pairs.forEach(([ai, j], k) => {
+    const a = model.dreams[ai], ca = new THREE.Color(FEEL[a.feel].hex);
     const b = model.dreams[j], cb = new THREE.Color(FEEL[b.feel].hex);
     const mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
     const len = a.pos.distanceTo(b.pos);
@@ -1433,7 +1462,8 @@ function clearSelection(restore = true) {
 function setFilter(key, set, fly = true) {
   filterKey = key; filterSet = set;
   if (key !== 'search' && $('#q').value) $('#q').value = '';
-  if (selected >= 0) clearSelection(false);
+  if (selected >= 0) clearSelection(false); else if (world.arcs) buildArcs(); // a thread's arcs go when the reveal does
+  if (key !== 'reveal' && panelMode === 'threads') { closePanel(); panelMode = null; }
   setStates(); syncChips(); syncSearchChip();
   if (set && set.size && fly) {
     const c = new THREE.Vector3(); set.forEach(i => c.add(model.dreams[i].pos)); c.multiplyScalar(1 / set.size);
@@ -1471,7 +1501,7 @@ function showDream(d) {
   }).join('') : '<p class="note" style="margin:0">Nothing shared with other dreams yet. Connections appear as the archive grows.</p>';
   $('#pBody').innerHTML = `
     <h2>${esc(d.title)}</h2>
-    ${filterKey === 'astro' && astro ? '<button class="back-astro" data-astro-back="1">‹ The Astronomer</button>' : ''}${filterKey === 'reveal' && reveal ? '<button class="back-astro" data-threads-back="1">‹ New threads</button>' : ''}
+    ${filterKey === 'astro' && astro ? '<button class="back-astro" data-astro-back="1">‹ The Astronomer</button>' : ''}${filterKey === 'reveal' && reveal ? `<button class="back-astro" data-threads-back="1">‹ ${esc(openThread() ? threadName(openThread().l) : 'New threads')}</button>` : ''}
     <div class="meta"><button class="feel" data-feelf="${d.feel}" title="Show every ${feel.label} dream"><span class="dot" style="background:${feel.hex};color:${feel.hex}"></span>${feel.label}</button>${dotsFor(d.vivid)}${d.lucid ? '<span class="lucid">Lucid</span>' : ''}${d.source === 'you' ? '<span class="yours">Yours</span>' : ''}</div>
     <div class="sec"><h3>Your account</h3><p class="account">${esc(shownText(d))}</p></div>
     <div class="sec"><h3>Recurring elements</h3>${tagChips ? `<div class="tags">${tagChips}</div>` : '<p class="note" style="margin:0">No elements tagged yet.</p>'}${d.source === 'you' ? noticedHTML(d) : ''}</div>
@@ -1496,12 +1526,19 @@ let panelMode = null;
 let reveal = null; // the "new threads" reveal after a re-read
 /* ---------- leafing through dreams, in date order, within whatever the sky is lighting ---------- */
 function leafList() {
-  if (filterKey === 'reveal' && reveal) return reveal.order.filter(i => filterSet.has(i)); // grouped by shared thread: the one exception to date order
+  if (filterKey === 'reveal' && reveal) { const th = openThread(); return th ? th.all : reveal.order; } // within the open thread, in date order
   const idx = filterSet && filterSet.size ? [...filterSet] : model.dreams.map(d => d.i);
   return idx.sort((a, b) => (model.dreams[a].t - model.dreams[b].t) || ((model.dreams[a].createdAt || 0) - (model.dreams[b].createdAt || 0)) || a - b);
 }
 function syncLeaf() {
   const bar = $('#pLeaf');
+  if (panelMode === 'threads' && reveal && reveal.list.length > 1) {
+    const k = reveal.ti ?? 0, n = reveal.list.length;
+    bar.hidden = false; $('#pLeafPos').textContent = (k + 1) + ' of ' + n;
+    bar.querySelector('[data-leaf="-1"]').disabled = k === 0;
+    bar.querySelector('[data-leaf="1"]').disabled = k === n - 1;
+    return;
+  }
   if (panelMode !== 'dream' || ed || selected < 0) { bar.hidden = true; return; }
   const L = leafList(), k = L.indexOf(selected);
   if (L.length < 2 || k < 0) { bar.hidden = true; return; }
@@ -1511,6 +1548,7 @@ function syncLeaf() {
   bar.querySelector('[data-leaf="1"]').disabled = k === L.length - 1;
 }
 function leaf(dir) {
+  if (panelMode === 'threads' && reveal) { const k = (reveal.ti ?? 0) + dir; if (k >= 0 && k < reveal.list.length) showThread(k, dir); return; }
   if (panelMode !== 'dream' || ed || selected < 0) return;
   const L = leafList(), k = L.indexOf(selected), j = L[k + dir];
   if (k < 0 || j === undefined) return;
@@ -1768,7 +1806,7 @@ function syncSearchChip() {
     const f = FEEL[filterKey.slice(5)]; qt.textContent = f.label;
     const dot = document.createElement('span'); dot.className = 'qdot'; dot.style.background = f.hex; qt.before(dot);
   } else { c.hidden = true; return; }
-  c.querySelector('.n').textContent = filterSet ? filterSet.size : 0;
+  c.querySelector('.n').textContent = filterKey === 'reveal' && reveal ? reveal.threads : filterSet ? filterSet.size : 0;
   c.hidden = false;
 }
 $('#qchip').addEventListener('click', e => { if (!e.target.closest('#qchipX') && filterKey === 'reveal' && reveal) showThreads(); });
@@ -1953,15 +1991,28 @@ function skipCeremonies() {
   cerQueue.forEach(clearTimeout); cerQueue = [];
   ceremonies.slice().forEach(endCeremony);
 }
+// how a new region is born: it brightens past its final level as its stars arrive, holds while its name writes in, then settles.
+// and the rest of the sky's regions recede while it forms, then return
+const CER_LOOK = { peak: 2.5, dimOthers: true };
 function tickCeremonies() {
   if (!ceremonies.length || !world?.clusterLayers) return;
   const now = performance.now();
+  let recede = 0;
   ceremonies.forEach(c => {
     const layers = world.clusterLayers.get(c.key); if (!layers) return;
-    const t = (now - c.t0) / 1000;
-    const f = sstep(0, 2.4, t) * (1 + 1.3 * Math.exp(-Math.max(0, t - 2.2) * 0.5)); // condenses as the stars gather, flares, then cools to normal
+    const t = (now - c.t0) / 1000, total = cerLength(c.cl.label) / 1000;
+    const f = sstep(0, 2.8, t) * (1 + (CER_LOOK.peak - 1) * (1 - sstep(4, 9, t))); // 0 → peak as the stars gather, held through the name, eased back to 100%
     layers.forEach(m => m.material.uniforms.uDim.value = f);
+    recede = Math.max(recede, sstep(0, 1.5, t) * (1 - sstep(total - 2.5, total, t)));
   });
+  if (CER_LOOK.dimOthers) {
+    const forming = new Set(ceremonies.map(c => c.key));
+    world.clusterLayers.forEach((layers, key) => {
+      if (forming.has(key) || world.held?.has(key)) return;
+      const base = filterKey ? (sameWord(key, filterKey) ? 1.25 : 0.45) : 1;
+      layers.forEach(m => m.material.uniforms.uDim.value = base + (Math.min(base, 0.4) - base) * recede);
+    });
+  }
 }
 
 /* ---------- the tour: new regions form one at a time, with the camera there to see it ---------- */
@@ -2249,7 +2300,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'l' || e.key === 'L') $('#btnList').click();
   else if (e.key === 'm' || e.key === 'M') toggleSound();
   else if (e.key === '/') { e.preventDefault(); body.classList.add('search-open'); q.focus(); }
-  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && panelMode === 'dream' && body.classList.contains('panel-open')) { e.preventDefault(); leaf(e.key === 'ArrowRight' ? 1 : -1); }
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && (panelMode === 'dream' || panelMode === 'threads') && body.classList.contains('panel-open')) { e.preventDefault(); leaf(e.key === 'ArrowRight' ? 1 : -1); }
 });
 window.addEventListener('keydown', e => { if (ambient && !['a', 'A'].includes(e.key)) exitAmbient(); }, true);
 
@@ -2498,7 +2549,9 @@ function prepareReveal(gained) {
     labs.forEach(l => { if ((count.get(l) || 0) >= 2) { if (!threads.has(l)) threads.set(l, []); threads.get(l).push(d.i); } });
   });
   if (!threads.size) { reveal = null; return null; }
-  const list = [...threads.entries()].map(([l, idx]) => ({ l, idx: idx.sort((a, b) => model.dreams[a].t - model.dreams[b].t) })).sort((a, b) => b.idx.length - a.idx.length);
+  const byDate = (a, b) => model.dreams[a].t - model.dreams[b].t;
+  const list = [...threads.entries()].map(([l, idx]) => ({ l, idx: idx.sort(byDate), all: model.dreams.filter(d => d.labels.has(l)).map(d => d.i).sort(byDate) }))
+    .sort((a, b) => b.all.length - a.all.length || b.idx.length - a.idx.length);
   const order = [], seen = new Set();
   list.forEach(({ idx }) => idx.forEach(i => { if (!seen.has(i)) { seen.add(i); order.push(i); } }));
   const gold = new Map(); gained.forEach((labs, id) => gold.set(id, new Set([...labs].filter(l => threads.has(l)))));
@@ -2509,21 +2562,50 @@ function prepareReveal(gained) {
 function openReveal() {
   if (!reveal) return;
   reveal.pending = false; lastInput = performance.now();
-  setFilter('reveal', new Set(reveal.order), true);
-  showThreads();
+  showThread(0);
 }
-const threadName = l => { for (const t of model.tags.values()) if (labelOf(t.key) === l) return t.label; return l; };
-function showThreads() {
+// the thread open in the reveal: every dream that now shares the word (in date order), and which of them are newly linked
+function openThread() {
+  if (filterKey !== 'reveal' || !reveal || reveal.ti == null) return null;
+  return reveal.list[reveal.ti] || null;
+}
+function threadFrame(all) {
+  // fit the whole thread into the sky the panel leaves visible: beside it on a desktop, above it on a phone
+  const c = new THREE.Vector3(); all.forEach(i => c.add(model.dreams[i].pos)); c.multiplyScalar(1 / all.length);
+  let rad = 12; all.forEach(i => rad = Math.max(rad, model.dreams[i].pos.distanceTo(c)));
+  const cur = getPose(), theta = cur.theta + 0.2, phi = THREE.MathUtils.clamp(cur.phi, 0.9, 1.3);
+  const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), aspect = camera.aspect;
+  const phone = innerWidth <= 760, side = phone ? 0 : Math.min(0.6, 416 / innerWidth), sheet = phone ? 0.62 : 0;
+  const r = THREE.MathUtils.clamp(Math.max(rad / (tanV * (1 - sheet) * 0.78), rad / (tanV * aspect * (1 - side) * 0.78)) + rad, 110, 1400); // + rad: a star nearer the camera than the centre still fits
+  const off = new THREE.Vector3().setFromSpherical(new THREE.Spherical(1, phi, theta)), fwd = off.clone().negate();
+  const right = new THREE.Vector3().crossVectors(fwd, camera.up).normalize(), up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+  const halfH = r * tanV, halfW = halfH * aspect;
+  const target = c.clone().addScaledVector(right, halfW * side).addScaledVector(up, -halfH * sheet);
+  return { target, r, theta, phi };
+}
+const threadName = l => { for (const t of model.tags.values()) if (labelOf(t.key) === l) return t.label.replace(/^./, c => c.toUpperCase()); return l; };
+// one thread per page: its dreams light up and are joined in the sky; leaf or swipe to the next thread
+function showThread(k, dir = 0) {
   if (!reveal) return;
-  if (selected >= 0) clearSelection(true);
-  $('#pLeaf').hidden = true;
-  $('#pEyebrow').textContent = `New threads · ${reveal.order.length} dream${reveal.order.length === 1 ? '' : 's'}`;
-  $('#pBody').innerHTML = `<p class="threads-intro">Reading your sky again found ${reveal.threads === 1 ? 'one new thread' : reveal.threads + ' new threads'} between these dreams. What's new is in gold.</p>` +
-    reveal.list.map(({ l, idx }) => `<div class="thread"><h3><span>${esc(threadName(l))}</span><b>${idx.length}</b></h3><div class="links">` +
-      idx.map(i => { const d = model.dreams[i]; return `<button class="link" data-i="${i}"><span class="dot" style="background:${FEEL[d.feel].hex}"></span><span class="lt">${esc(d.title)}<span class="dt">${fmtShort(d.t)}</span></span></button>`; }).join('') + '</div></div>').join('');
+  k = Math.max(0, Math.min(reveal.list.length - 1, k ?? reveal.ti ?? 0));
+  reveal.ti = k;
+  const th = reveal.list[k];
+  if (selected >= 0) { selected = -1; savedPose = null; }
+  filterKey = 'reveal'; filterSet = new Set(th.all);
+  if ($('#q').value) $('#q').value = '';
+  setStates(); syncChips(); syncSearchChip(); buildArcs();
+  const fresh = new Set(th.idx), n = th.all.length, nNew = th.idx.length;
+  $('#pEyebrow').textContent = reveal.list.length > 1 ? `New thread · ${k + 1} of ${reveal.list.length}` : 'New thread';
+  $('#pBody').innerHTML = (k === 0 ? `<p class="threads-intro">Reading your sky again found ${reveal.threads === 1 ? 'one new thread' : reveal.threads + ' new threads'}.${reveal.list.length > 1 ? (('ontouchstart' in window) ? ' Swipe to move between them.' : ' Use the arrows to move between them.') : ''}</p>` : '') +
+    `<h2>${esc(threadName(th.l))}</h2>
+    <p class="thread-meta">${n} dreams share this${nNew < n ? ` · ${nNew} newly linked` : ''}</p>
+    <div class="links">` + th.all.map(i => { const d = model.dreams[i]; return `<button class="link${fresh.has(i) ? ' fresh' : ''}" data-i="${i}"><span class="dot" style="background:${FEEL[d.feel].hex}"></span><span class="lt">${esc(d.title)}<span class="dt">${fmtShort(d.t)}</span>${fresh.has(i) && nNew < n ? '<span class="nw">new</span>' : ''}</span></button>`; }).join('') + '</div>';
   $('#pBody').scrollTop = 0;
-  openPanel(); panelMode = 'threads';
+  openPanel(); panelMode = 'threads'; syncLeaf();
+  if (dir) { const pb = $('#pBody'); pb.classList.remove('leaf-in-l', 'leaf-in-r'); void pb.offsetWidth; pb.classList.add(dir > 0 ? 'leaf-in-l' : 'leaf-in-r'); }
+  flyTo(threadFrame(th.all), reduceMotion ? 0.001 : 2);
 }
+const showThreads = () => showThread(reveal?.ti ?? 0);
 $('#recal').addEventListener('click', e => {
   if (e.target.closest('#recalGo')) runRecal();
   else if (e.target.closest('#recalX')) {
