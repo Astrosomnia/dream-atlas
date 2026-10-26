@@ -20,7 +20,7 @@ Generative Web Audio. No audio files, nothing to download.
   - The drone fades out and back in on the new key's root.
 - **Timing:** chords last 12–17 s, sometimes a quicker 9.5–11.5 s turn. Long holds of 19 s and up were cut because they got warbly. Attack and overlap stretch to fit.
 - **Filter:** pad low-pass at about 820 Hz, breathing ±210 Hz on a 32 s cycle.
-- **Air:** pink noise through a wandering band-pass. Kept very low (0.018).
+- **Air:** pink noise through a wandering band-pass. Kept very low (0.009, halved again after hearing it in the app).
 - **Bells (the melody):** a far-off three-partial sine bell, set well back (mostly reverb, very little direct sound), like stars flickering on in the distance. They follow a small songbook in a loose form:
   - single bells, and the two-note **sighs** (a note that leans, then lets go). Jarred likes these most: keep them common.
   - the home motif F#–G–A→D ("the look up") and a variant that starts a sixth below;

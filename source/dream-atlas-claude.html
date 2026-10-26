@@ -332,6 +332,9 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
   #dreamText { min-height: 34vh; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); font-size: 17px; }
   .s-foot { flex-direction: column; align-items: stretch; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); }
   .s-actions { justify-content: flex-end; }
+  /* sound sits above Record, so the recurring chips keep their width */
+  .bottom-right { flex-direction: column; gap: 10px; }
+  body #recal { bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); }
 }
 /* ---------- sound: a small waveform; still and smaller when off, brighter and gently flowing when on (drawn in script) ---------- */
 #btnSound svg path { stroke-width: 1.6; }
@@ -397,7 +400,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.26 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.27 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record are saved privately to you; nobody else who opens this page can see them.</p>
 </div>
 
@@ -2924,7 +2927,7 @@ function makeAmbience(ctx, opts = {}) {
   const airBP = ctx.createBiquadFilter(); airBP.type = 'bandpass'; airBP.frequency.value = 520; airBP.Q.value = 0.6;
   const airLfo = ctx.createOscillator(); airLfo.frequency.value = 0.023;
   const airLfoAmt = ctx.createGain(); airLfoAmt.gain.value = 300; airLfo.connect(airLfoAmt).connect(airBP.frequency);
-  const airG = ctx.createGain(); airG.gain.value = 0.018;
+  const airG = ctx.createGain(); airG.gain.value = 0.009;
   const pan = ctx.createStereoPanner(); const panLfo = ctx.createOscillator(); panLfo.frequency.value = 0.011;
   const panAmt = ctx.createGain(); panAmt.gain.value = 0.5; panLfo.connect(panAmt).connect(pan.pan);
   air.connect(airBP).connect(airG).connect(pan); pan.connect(master); pan.connect(rev);

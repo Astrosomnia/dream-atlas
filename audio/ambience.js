@@ -66,7 +66,7 @@ function makeAmbience(ctx, opts = {}) {
   const airBP = ctx.createBiquadFilter(); airBP.type = 'bandpass'; airBP.frequency.value = 520; airBP.Q.value = 0.6;
   const airLfo = ctx.createOscillator(); airLfo.frequency.value = 0.023;
   const airLfoAmt = ctx.createGain(); airLfoAmt.gain.value = 300; airLfo.connect(airLfoAmt).connect(airBP.frequency);
-  const airG = ctx.createGain(); airG.gain.value = 0.018;
+  const airG = ctx.createGain(); airG.gain.value = 0.009;
   const pan = ctx.createStereoPanner(); const panLfo = ctx.createOscillator(); panLfo.frequency.value = 0.011;
   const panAmt = ctx.createGain(); panAmt.gain.value = 0.5; panLfo.connect(panAmt).connect(pan.pan);
   air.connect(airBP).connect(airG).connect(pan); pan.connect(master); pan.connect(rev);
