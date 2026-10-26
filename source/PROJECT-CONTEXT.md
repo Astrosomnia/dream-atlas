@@ -1,6 +1,6 @@
 # Dream Atlas: project context
 
-Last updated 25 Oct 2026 (version 0.28).
+Last updated 25 Oct 2026 (version 0.29).
 
 ## What it is
 
@@ -66,7 +66,7 @@ Wonder `#74d7cf` · Joy `#f3e08f` · Longing `#df9fb2` · Sadness `#7f9fe0` · C
 
 The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary". Recurring dream mechanics, like legs that won't run, belong in motifs rather than the feeling.
 
-## What's built (v0.28)
+## What's built (v0.29)
 
 - Capture: text plus voice dictation, which merges Android's cumulative results. The mic sits inside the text box, gold while it's empty. New dreams default to last night.
 - Claude tagging with a supernova arrival. The spelling tidy is a setting, with the original always kept.
@@ -82,13 +82,13 @@ The feeling is the dream's overall tone. Calm doubles as "peaceful or ordinary".
 - **The "new threads" reveal:** a gold numeral plus *new threads* header at the top. Gained tags show in gold until it's cleared, leafing is grouped by thread, and two taps on the sky clear it.
 - Backup export and import, in How to Read.
 - Nebulae repaint after phone GPU resets, and the sky holds still under the phone keyboard.
-- **Sound (v0.28):** a generative ambient bed (`audio/ambience.js`, inlined into both builds) at master level 0.45. The toggle is a small wave icon, still and dim when off, brighter and gently flowing when on, easing between the two. It sits beside the ambient-mode moon (above Record on phones), with **M** as the key. On by default: browsers block sound until the first interaction, so it fades in at the first tap or key press (on touch, that's when the finger lifts). Turning it off is remembered. It fades out and suspends when the tab is hidden, steps aside while the microphone is listening, and keeps playing in ambient mode.
+- **Sound (v0.29):** a generative ambient bed (`audio/ambience.js`, inlined into both builds) at master level 0.45. The toggle is a small signal-trace wave (a flat line with a few cycles in the middle), still and dim when off, brighter and gently flowing when on, easing between the two. It sits beside the ambient-mode moon (above Record on phones), with **M** as the key. On by default: browsers block sound until the first interaction, so it fades in at the first tap or key press (on touch, that's when the finger lifts). Turning it off is remembered. It fades out and suspends when the tab is hidden, steps aside while the microphone is listening, uses the larger 'playback' audio buffer so a busy sky doesn't crackle it, and keeps playing in ambient mode.
 
 ## Outstanding (as of 25 Oct)
 
 - **Jarred:** live with v0.24 on real dreams. Run Re-analyse, judge the moments and any regions that form, and check the arrival ceremony's timing on a phone (it hasn't been seen in motion).
 - **Jarred:** make sure the API keys pasted in chat early on are revoked. Only the Cloudflare secret should exist.
-- **Jarred:** listen to the sound in the app on desktop and phone (v0.28). Tune it in the music thread using `audio/music-brief.md`. When `audio/ambience.js` changes, re-inline it into both builds (the block starts at "Sound: a generative ambient bed").
+- **Jarred:** listen to the sound in the app on desktop and phone (v0.29). Tune it in the music thread using `audio/music-brief.md`. When `audio/ambience.js` changes, re-inline it into both builds (the block starts at "Sound: a generative ambient bed").
 - **Roadmap doc:** refresh it. It predates the Astronomer, backup, leafing and live regions shipping.
 - **Claude Code folder:** its prototype copy is v0.10. Replace it with the current build before any port.
 - **Data:** clean up the old details and themes once everything has been re-analysed.

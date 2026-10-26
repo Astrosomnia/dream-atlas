@@ -400,7 +400,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.28 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.29 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record are saved privately to you; nobody else who opens this page can see them.</p>
 </div>
 
@@ -3219,7 +3219,8 @@ function soundApply(fade) {
   }
   if (!sound.ctx) {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    try { sound.ctx = new AC(); sound.amb = makeAmbience(sound.ctx, { seed: (Math.random() * 1e6) | 0 }); } catch (e) { sound.ctx = null; return; }
+    // 'playback' asks for a larger audio buffer: no use for instant response here, and it stops crackles when the sky is busy
+    try { try { sound.ctx = new AC({ latencyHint: 'playback' }); } catch (e) { sound.ctx = new AC(); } sound.amb = makeAmbience(sound.ctx, { seed: (Math.random() * 1e6) | 0 }); } catch (e) { sound.ctx = null; return; }
   }
   if (sound.ctx.state !== 'running') sound.ctx.resume().catch(() => {});
   sound.amb.start(fade);
@@ -3227,11 +3228,12 @@ function soundApply(fade) {
 // the icon: a wave that eases between a small still form (off) and a fuller, slowly flowing one (on)
 const wave = { amp: sound.on ? 1 : 0, speed: sound.on && !reduceMotion ? 1 : 0, phase: 0, raf: 0, last: 0 };
 function drawWave() {
-  const a = wave.amp, half = 7.5 + 1.8 * a, A = 2.6 + 2.3 * a * (1 + 0.12 * Math.sin(wave.phase * 0.43));
+  // a flat line with a few cycles in the middle, like a signal trace; small and still off, fuller and flowing on
+  const a = wave.amp, A = 2.3 + 2.5 * a * (1 + 0.12 * Math.sin(wave.phase * 0.43));
   let d = '';
-  for (let i = 0; i <= 40; i++) {
-    const u = i / 40 * 2 - 1, x = 12 + u * half, env = 1 - u * u;            // tapers to nothing at both ends
-    const y = 12 - A * env * Math.sin(u * Math.PI * 1.75 + wave.phase);
+  for (let i = 0; i <= 64; i++) {
+    const u = i / 64 * 2 - 1, x = 12 + u * 9, w = Math.min(1, Math.abs(u) / 0.78), env = Math.pow(1 - w * w, 2);
+    const y = 12 - A * env * Math.sin(u * Math.PI * 3.6 + wave.phase);
     d += (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(2);
   }
   $('#soundWave').setAttribute('d', d);
