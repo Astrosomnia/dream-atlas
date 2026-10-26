@@ -352,6 +352,12 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
 }
 </style>
 
+<script>
+/* the interface stays hidden from the very first paint until the opening fly-in has begun (three.js can take a moment to arrive);
+   if the sky never boots, it shows anyway after a few seconds */
+document.body.classList.add('intro');
+setTimeout(() => { if (!window.__atlasBooted) document.body.classList.remove('intro'); }, 8000);
+</script>
 <div id="stage"></div>
 <div class="vignette"></div>
 <div class="grain" id="grain"></div>
@@ -409,7 +415,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.30 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.31 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record are saved privately to you; nobody else who opens this page can see them.</p>
 </div>
 
@@ -1873,7 +1879,7 @@ function cerLength(label) { return CER_LEAD + label.length * CER_STEP + CER_HOLD
 // the name starts a little larger and wider than a settled label, never more than the screen can hold
 function cerStyle(label) {
   const ls = 0.4, avail = Math.min(innerWidth * 0.8, 520);
-  const fs = Math.max(10, Math.min(14, avail / ((label.length + 3) * (0.6 + ls))));
+  const fs = Math.max(10.5, Math.min(14.7, avail / ((label.length + 3) * (0.6 + ls))));
   return { fontSize: fs.toFixed(1) + 'px', letterSpacing: ls + 'em', color: '#f3f0fb', textShadow: '0 0 10px rgba(210,225,255,.55), 0 0 26px rgba(160,185,255,.25)' };
 }
 function startCeremony(keys) {
@@ -2551,7 +2557,11 @@ async function checkEmergence(opts = {}) {
   }
   try { localStorage.setItem('dream-atlas.regionTried', JSON.stringify(tried)); } catch (e) {}
   emerging = false;
-  if (made && opts.rebuild !== false) { const fresh = rebuildSky({ crossfade: true, migrate: true, ceremony: 'tour' }); if (fresh.length) startTour(fresh); }
+  if (made && opts.rebuild !== false) {
+    const open = selected >= 0 && body.classList.contains('panel-open') ? model.dreams[selected].id : null;
+    const fresh = rebuildSky({ crossfade: true, migrate: true, ceremony: 'tour' });
+    if (fresh.length) startTour(fresh, open ? () => { const j = model.dreams.findIndex(x => x.id === open); if (j >= 0) { panelMode = 'dream'; selectDream(j); } else flyTo(overviewPose(), 2.4); } : null);
+  }
   return made;
 }
 
@@ -2924,7 +2934,7 @@ async function submitDream(skipAI) {
 /* a new star arrives: rebuild, fly over, ignite, then open it */
 function arrive(rec) {
   resetView(); syncChips();
-  rebuildSky({ crossfade: true, migrate: true, ceremony: 'later' });
+  const fresh = rebuildSky({ crossfade: true, migrate: true, ceremony: 'tour' }); // any region this dream completes waits, unformed, until after its supernova
   const i = model.dreams.findIndex(d => d.id === rec.id); if (i < 0) return;
   const d = model.dreams[i];
   world.state[i] = 0; nova.hold(rec.id);
@@ -2932,10 +2942,15 @@ function arrive(rec) {
   const r = (150 + d.vivid * 8) * (portrait ? 1.8 : 1);
   flyTo({ target: d.pos.clone(), r, theta: cur.theta + 0.35, phi: THREE.MathUtils.clamp(cur.phi, 0.95, 1.3) }, reduceMotion ? 0.001 : 2.8, () => {
     nova.start(d, () => {
-      const j = model.dreams.findIndex(x => x.id === rec.id);
-      if (j >= 0 && selected < 0 && !ambient && !capturing) { panelMode = 'dream'; selectDream(j); }
+      const open = () => {
+        const j = model.dreams.findIndex(x => x.id === rec.id);
+        if (j >= 0 && selected < 0 && !ambient && !capturing) { panelMode = 'dream'; selectDream(j); }
+        setTimeout(checkEmergence, 2500);
+      };
       if (pendingCeremony.length) { const k = pendingCeremony; pendingCeremony = []; setTimeout(() => startCeremony(k), 700); }
-      setTimeout(checkEmergence, 2500);
+      // the camera draws back, the region gathers around the new star and names itself, then the dream opens
+      if (fresh.length && world.held?.size) setTimeout(() => startTour(fresh, open), 500);
+      else open();
     });
   });
 }
@@ -2993,7 +3008,7 @@ function frame(now) {
       nova.mat.uniforms.uP.value = p;
       T0[ni] = p < 0.09 ? 0 : 1 + 1.1 * (1 - sstep(0.09, 1, p));
       const layers = world.clusterLayers.get(nova.state.cluster);
-      if (layers) layers.forEach(m => m.material.uniforms.uDim.value = 1 + 0.7 * sstep(0.05, 0.25, p) * (1 - sstep(0.35, 1, p)));
+      if (layers && !world.held?.has(nova.state.cluster)) layers.forEach(m => m.material.uniforms.uDim.value = 1 + 0.7 * sstep(0.05, 0.25, p) * (1 - sstep(0.35, 1, p)));
       if (p >= 0.8 && nova.state.done) { const cb = nova.state.done; nova.state.done = null; cb(); }
       if (p >= 1 && nova.state) { nova.state = null; nova._model = null; nova.mesh.visible = nova.debris.visible = false; setStates(); }
     } else if (nova.pending) T0[ni] = 0;
@@ -3481,12 +3496,14 @@ if (SHOT === 'focus') { applyPose(ov); const i = model.dreams.findIndex(d => d.i
 else if (SHOT === 'cluster') { const cl = model.clusters[0]; applyPose({ target: cl.centre.clone(), r: cl.radius * 3 + 80, theta: 0.9, phi: 1.12 }); }
 else if (SHOT) { applyPose(ov); }
 else if (reduceMotion) { applyPose(ov); }
+if (SHOT || reduceMotion) body.classList.remove('intro'); // no fly-in, so nothing to wait for
 else {
   body.classList.add('intro');
   applyPose({ ...ov, r: ov.r * 2.4, theta: ov.theta - 0.5, phi: 1.0 });
   flyTo(ov, 6.5, () => {});
   setTimeout(() => body.classList.remove('intro'), 2600);
 }
+window.__atlasBooted = true;
 controls.update();
 startLoop();
 loadMine();
