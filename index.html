@@ -423,7 +423,7 @@ body.capturing #sheet { transform: translate(-50%, 0); opacity: 1; pointer-event
     <h3 style="margin-top:16px">Preview the demo at</h3>
     <div class="seg" id="sizes"></div>
   </div>
-  <p class="fine" style="margin-top:6px">Version 0.27 · 25 Oct 2026</p>
+  <p class="fine" style="margin-top:6px">Version 0.28 · 25 Oct 2026</p>
   <p class="fine">Demo dreams are fictional. Dreams you record stay in this browser on this device. Tagging sends the dream's text to Claude, then nothing is kept.</p>
 </div>
 
@@ -3260,7 +3260,8 @@ function makeAmbience(ctx, opts = {}) {
 }
 const SOUND_KEY = 'dream-atlas.sound';
 const sound = { ctx: null, amb: null, on: false, ducked: false, sus: 0 };
-try { sound.on = localStorage.getItem(SOUND_KEY) === '1'; } catch (e) {}
+sound.on = true; // on unless you've turned it off; it begins at your first tap or key
+try { sound.on = localStorage.getItem(SOUND_KEY) !== '0'; } catch (e) {}
 function soundAudible() { return sound.on && !sound.ducked && !document.hidden; }
 function soundUI() { const b = $('#btnSound'); b.setAttribute('aria-pressed', String(sound.on)); b.title = sound.on ? 'Sound on (M)' : 'Sound (M)'; kickWave(); }
 function soundApply(fade) {
@@ -3307,12 +3308,16 @@ function toggleSound() {
   soundUI(); soundApply(sound.on ? 4 : 1.8);
 }
 function soundDuck(d) { if (sound.ducked === d) return; sound.ducked = d; soundApply(d ? 0.8 : 3); }
-function soundFirstGesture(e) {
+// browsers only allow sound after a tap or key; on phones that's when the finger lifts, so listen for every kind
+const SOUND_GESTURES = ['pointerdown', 'pointerup', 'touchend', 'mousedown', 'keydown', 'click'];
+function soundGesture(e) {
   if (e.target && e.target.closest && e.target.closest('#btnSound')) return; // the button handles itself
-  window.removeEventListener('pointerdown', soundFirstGesture, true); window.removeEventListener('keydown', soundFirstGesture, true);
-  if (sound.on && !sound.ctx) soundApply(6);
+  if (!sound.on || !soundAudible()) return;
+  if (!sound.ctx) soundApply(6);
+  else if (sound.ctx.state !== 'running') sound.ctx.resume().catch(() => {});
+  if (sound.ctx && sound.ctx.state === 'running') SOUND_GESTURES.forEach(ev => window.removeEventListener(ev, soundGesture, true));
 }
-if (sound.on) { window.addEventListener('pointerdown', soundFirstGesture, true); window.addEventListener('keydown', soundFirstGesture, true); }
+SOUND_GESTURES.forEach(ev => window.addEventListener(ev, soundGesture, true));
 $('#btnSound').addEventListener('click', e => { e.stopPropagation(); toggleSound(); });
 // phones have no room for a sixth button up top, so it sits beside Record instead
 const soundPhone = matchMedia('(max-width: 760px)');
